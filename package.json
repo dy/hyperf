@@ -1,0 +1,35 @@
+{
+  "name": "hyperf",
+  "version": "1.0.0",
+  "description": "Hypertext fragments",
+  "main": "hyperf.js",
+  "directories": {
+    "test": "test"
+  },
+  "keywords": [
+    "hyper fragments",
+    "fragment",
+    "htl",
+    "hyps",
+    "dom-tag",
+    "template",
+    "build-dom",
+    "hyperscript",
+    "ironjs",
+    "rxjs",
+    "htm"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spectjs/hyperf.git"
+  },
+  "author": "Dmitry Iv",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/spectjs/hyperf/issues"
+  },
+  "homepage": "https://github.com/spectjs/hyperf#readme"
+}
