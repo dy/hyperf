@@ -4,7 +4,7 @@
 
 #### _`` el = h`...content` ``_
 
-Create hypertext fragment via tagged literal with [htm](https://github.com/htm) syntax support.
+Create hypertext fragment via tagged literal with [htm](https://github.com/htm) syntax support.<br/>
 Allows reactive fields: _Promise_, _Async Iterable_, any [Observable](https://github.com/tc39/proposal-observable), [RXjs](https://rxjs-dev.firebaseapp.com/guide/overview), any [observ\*](https://github.com/Raynos/observ) etc., see [sube](https://github.com/spectjs/sube).
 
 ```js
