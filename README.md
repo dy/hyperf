@@ -2,25 +2,40 @@
 
 > Hypertext fragments builder.
 
+## API
+
 #### _`` el = h`...content` ``_
 
 Create hypertext fragment via tagged literal with [htm](https://github.com/htm) syntax support.
 Allows reactive fields: _Promise_, _Async Iterable_, any [Observable](https://github.com/tc39/proposal-observable), [RXjs](https://rxjs-dev.firebaseapp.com/guide/overview), any [observ\*](https://github.com/Raynos/observ) etc., see [sube](https://github.com/spectjs/sube).
 
-```jsx
+```js
 import h from './hyperf.js'
 import v from './vref.js'
 
-const text = v('foo') // reactive value (== vue3 ref)
-const a = h`<a>${ text }</a>` // <a>foo</a>
-text.value = 'bar' // <a>bar</a>
+const text = v('foo') // reactive value
+
+const a = h`<a>${ text }</a>`
+// <a>foo</a>
+
+text.value = 'bar'
+// <a>bar</a>
 
 const frag = h`<x ...${{x: 1}}>1</x><y>2</y>`  // htm syntax
-h`<${a}>${ frag }</a>` // <a><x x="1">1</x><y>2</y></a>
+h`<${a}>${ frag }</a>`
+// <a><x x="1">1</x><y>2</y></a>
 
-a[Symbol.dispose]() // destroy observers
+a.dispose() // destroy observers
+```
 
-/* jsx h */
+### JSX
+
+To use hyperf as JSX, just provide directive for your builder (webpack or esbuild):
+
+```jsx
+import h from 'hyperf' /* jsx h */
+
+const a1 = <a>...</a>
 const a2 = <a>{ rxSubject } or { asyncIterable } or { promise }</a>
 
 h(a, a2) // render/update
