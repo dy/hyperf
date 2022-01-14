@@ -8,7 +8,7 @@ Create hypertext fragment via tagged literal with [htm](https://github.com/htm) 
 Allows reactive fields: _Promise_, _Async Iterable_, any [Observable](https://github.com/tc39/proposal-observable), [RXjs](https://rxjs-dev.firebaseapp.com/guide/overview), any [observ\*](https://github.com/Raynos/observ) etc., see [sube](https://github.com/spectjs/sube)
 
 ```jsx
-import {h, v} from 'spect'
+import h from 'hyperf'
 
 const text = v('foo') // reactive value (== vue3 ref)
 const a = h`<a>${ text }</a>` // <a>foo</a>
