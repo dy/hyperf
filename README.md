@@ -2,11 +2,10 @@
 
 > Hypertext fragments builder.
 
-Create hypertext fragments via
-
 #### _`` el = h`...content` ``_
 
-HTML builder with [HTM](https://ghub.io/htm) syntax and reactive fields support: _Promise_, _Async Iterable_, any [Observable](https://github.com/tc39/proposal-observable), [RXjs](https://rxjs-dev.firebaseapp.com/guide/overview), any [observ\*](https://github.com/Raynos/observ) etc.
+Create hypertext fragment via tagged literal with [htm](https://github.com/htm) syntax support.
+Allows reactive fields: _Promise_, _Async Iterable_, any [Observable](https://github.com/tc39/proposal-observable), [RXjs](https://rxjs-dev.firebaseapp.com/guide/overview), any [observ\*](https://github.com/Raynos/observ) etc., see [sube](https://github.com/spectjs/sube)
 
 ```jsx
 import {h, v} from 'spect'
@@ -25,3 +24,9 @@ const a2 = <a>{ rxSubject } or { asyncIterable } or { promise }</a>
 
 h(a, a2) // render/update
 ```
+
+## Refs
+
+[lit-html](https://ghub.io/lit-html), [htm](https://ghub.io/htm), [htl](https://ghub.io/htl), [hyperscript](https://ghub.io/hyperscript), [incremental-dom](https://ghub.io/incremental-dom), [snabbdom](https://ghub.io/snabbdom), [nanomorph](https://ghub.io/nanomorph), [uhtml](https://ghub.io/uhtml) and others.
+
+<p align="center">ॐ</p>
