@@ -1,20 +1,21 @@
-import htm from '../node_modules/htm/htm.js'
-import { observable, primitive, sube } from '../node_modules/sube/sube.js'
+import htm from '../node_modules/htm/dist/htm.module.js'
+import sube, { observable } from '../node_modules/sube/sube.js'
 
 export const _teardown = Symbol(), _static = Symbol()
 
-if (!Symbol.dispose) Symbol.dispose=S('dispose')
+Symbol.dispose||=Symbol('dispose')
 
 
 // DOM
-const TEXT = 3, ELEM = 1, ATTR = 2, COMM = 8, FRAG = 11, COMP = 6,
-      SHOW_ELEMENT = 1, SHOW_TEXT = 4, SHOW_COMMENT = 128
+const TEXT = 3, ELEM = 1, ATTR = 2, COMM = 8, FRAG = 11, COMP = 6
+
 const cache = new WeakSet,
       ctx = {init:false},
       doc=document
+
 export const h = hyperscript.bind(ctx)
 
-export default function (statics) {
+export default (statics) => {
   if (!Array.isArray(statics)) return h(...arguments)
 
   // HTM caches nodes that don't have attr or children fields
@@ -133,14 +134,25 @@ const flat = (children) => {
     }
   }
   return out
-}
+},
+
+// FIXME: just check !val || typeof val !== 'object'
+primitive = (val) =>
+  !val ||
+  typeof val === 'string' ||
+  typeof val === 'boolean' ||
+  typeof val === 'number' ||
+  (typeof val === 'object' ? (val instanceof RegExp || val instanceof Date) :
+  typeof val !== 'function'),
+
 
 // FIXME: make same-key morph for faster updates
 // FIXME: modifying prev key can also make it faster
-const same = (a, b) => a === b || (a && b && a.nodeType === TEXT && b.nodeType === TEXT && a.data === b.data)
+same = (a, b) => a === b || (a && b && a.nodeType === TEXT && b.nodeType === TEXT && a.data === b.data),
 
 // SOURCE: src/diff-inflate.js
-const merge = (parent, a, b, end = null) => {
+// FIXME: avoid insert, replace: do that before
+merge = (parent, a, b, end = null) => {
   let i = 0, cur, next, bi, n = b.length, m = a.length
 
   // skip head/tail
@@ -171,27 +183,27 @@ const merge = (parent, a, b, end = null) => {
   }
 
   return b
-}
+},
 
-const insert = (parent, a, before) => {
+insert = (parent, a, before) => {
   if (a != null) {
     if (primitive(a)) parent.insertBefore(doc.createTextNode(a), before)
     else parent.insertBefore(a, before)
   }
-}
+},
 
 // note the order is different from replaceNode(new, old)
-const replace = (parent, from, to, end) => {
+replace = (parent, from, to, end) => {
   if (to != null) {
     if (primitive(to)) if (from.nodeType === TEXT) from.data = to; else from.replaceWith(to)
     else if (to.nodeType) parent.replaceChild(to, from)
     // FIXME: make sure no slice needed here
     else merge(parent, [from], to, end)
   }
-}
+},
 
 // excerpt from element-props
-const attr = (el, k, v, desc) => (
+attr = (el, k, v, desc) => (
   el[k] !== v &&
   // avoid readonly props https://jsperf.com/element-own-props-set/1
   (!(k in el.constructor.prototype) || !(desc = Object.getOwnPropertyDescriptor(el.constructor.prototype, k)) || desc.set) &&

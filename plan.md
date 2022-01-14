@@ -1,5 +1,7 @@
 # plan
 
+* [ ] make sure main points to src/index always, not bundle: needed for external bundling
+
 * [ ] make tests use remote deps as peer-deps, reduce number of dev dep libs
 
 * [x] name: hyperf

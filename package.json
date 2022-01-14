@@ -2,25 +2,31 @@
   "name": "hyperf",
   "version": "1.0.0",
   "description": "Hypertext fragments",
-  "main": "hyperf.js",
+  "main": "src/index.js",
+  "module": "src/index.js",
   "directories": {
     "test": "test"
   },
   "keywords": [
     "hyper fragments",
+    "hyperscript",
+    "jsx",
+    "dom-jsx",
     "fragment",
     "htl",
+    "htm",
     "hyps",
-    "dom-tag",
+    "reactivity",
+    "reactive",
     "template",
     "build-dom",
-    "hyperscript",
-    "ironjs",
-    "rxjs",
-    "htm"
+    "observable",
+    "rxjs"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node -r ./test/register.cjs test/index.js",
+    "build": "rollup src/index.js --file hyperf.js --format esm",
+    "minify": "terser hyperf.js -o hyperf.min.js --module -c passes=3 -m"
   },
   "repository": {
     "type": "git",
@@ -31,5 +37,8 @@
   "bugs": {
     "url": "https://github.com/spectjs/hyperf/issues"
   },
-  "homepage": "https://github.com/spectjs/hyperf#readme"
+  "homepage": "https://github.com/spectjs/hyperf#readme",
+  "dependencies": {
+    "htm": "^3.1.0"
+  }
 }
