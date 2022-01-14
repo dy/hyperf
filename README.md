@@ -2,8 +2,6 @@
 
 > Hypertext fragments builder.
 
-## API
-
 #### _`` el = h`...content` ``_
 
 Create hypertext fragment via tagged literal with [htm](https://github.com/htm) syntax support.
