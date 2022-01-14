@@ -17,6 +17,7 @@
     + hyperfragment
     + very similar to printf (print formatted string)
       + even signature is similar printf(strin, f1, f2, ...)
+    + hi perf
   * hypf.js?
   * domfrag.js?
   * fragm.js?
