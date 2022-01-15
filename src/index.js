@@ -96,26 +96,22 @@ function hyperscript(tag, props, ...children) {
     return tag
   }
   // clean up previous observables
-  else if (tag[Symbol.dispose]) tag[Symbol.dispose]()
+  else tag[Symbol.dispose]?.()
 
   // apply props
-  let unsub = [], subs, i, child
-  for (let name in props) {
-    let value = props[name]
+  let unsub = [], subs = [], i, child, name, value, s, v, match
+  for (name in props) {
+    value = props[name]
     // classname can contain these casted literals
     if (typeof value === 'string') value = value.replace(/\b(false|null|undefined)\b/g,'')
 
     // primitive is more probable also less expensive than observable check
     if (observable(value)) unsub.push(sube(value, v => attr(tag, name, v)))
-    else if (name === 'style' && typeof value !== 'string') {
-      for (let s in value) {
-        let v = value[s]
-        if(observable(v)) unsub.push(sube(v, v => tag.style.setProperty(s, v)))
-        else {
-          let match = v.match(/(.*)\W+!important\W*$/);
-          if (match) tag.style.setProperty(s, match[1], 'important')
-          else tag.style.setProperty(s, v)
-        }
+    else if (typeof value !== 'string' && name === 'style') {
+      for (s in value) {
+        if (observable(v=value[s])) unsub.push(sube(v, v => tag.style.setProperty(s, v)))
+        else if (match = v.match(/(.*)\W+!important\W*$/)) tag.style.setProperty(s, match[1], 'important')
+        else tag.style.setProperty(s, v)
       }
     }
     else attr(tag, name, value)
@@ -123,24 +119,22 @@ function hyperscript(tag, props, ...children) {
 
   // detect observables
   for (i = 0; i < children.length; i++)
-    if (child = children[i]) {
+    if (child = children[i])
       // static nodes (cached by HTM) must be cloned, because h is not called for them more than once
       if (child[_static]) (children[i] = child.cloneNode(true))
-      else if (observable(child)) (subs || (subs = []))[i] = child, child = new Text
-    }
+      else if (observable(child)) subs[i] = child, child = new Text
+
 
   // append shortcut
   if (!tag.childNodes.length) tag.append(...flat(children))
   else swap(tag, tag.childNodes, flat(children))
 
-  if (subs) unsub.push(...subs.map((sub, i) => sube(sub, child => (
+  if (subs.length) unsub.push(...subs.map((sub, i) => sube(sub, child => (
     children[i] = child,
     swap(tag, tag.childNodes, flat(children))
   ))))
 
-  if (unsub.length) tag[Symbol.dispose] = () => {
-    for (let fn of unsub) fn.call ? fn() : fn.unsubscribe();
-  }
+  if (unsub.length) tag[Symbol.dispose] = () => unsub.map( fn => fn.call ? fn() : fn.unsubscribe() )
 
   return tag
 }
