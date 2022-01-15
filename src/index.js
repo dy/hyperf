@@ -1,4 +1,4 @@
-import htm from '../node_modules/htm/dist/htm.module.js'
+import htm from '../node_modules/htm/dist/htm.mjs'
 import sube, { observable } from '../node_modules/sube/sube.js'
 import swap from '../node_modules/swapdom/swap-inflate.js'
 
@@ -11,26 +11,10 @@ Symbol.dispose||=Symbol('dispose')
 // FIXME: modifying prev key can also make it faster
 // SOURCE: src/diff-inflate.js
 // FIXME: avoid insert, replace: do that before
-Object.assign(swap, {
-  same(a, b) { a === b || (a && b && a.nodeType === TEXT && b.nodeType === TEXT && a.data === b.data) },
-
-  insert(a, b, parent) {
-    if (b != null) {
-      if (primitive(b)) parent.insertBefore(doc.createTextNode(b), a)
-      else parent.insertBefore(b, a)
-    }
-  },
-
-  // note the order is different from replaceNode(new, old)
-  replace (from, to, parent) {
-    if (to != null) {
-      if (primitive(to)) if (from.nodeType === TEXT) from.data = to; else from.replaceWith(to)
-      else if (to.nodeType) parent.replaceChild(to, from)
-      // FIXME: make sure no slice needed here
-      else merge(parent, [from], to, from.nextSibling)
-    }
-  }
-})
+swap.same = (a, b) => a === b || a?.data != null && a?.data === b?.data
+swap.insert = (a, b, parent) => parent.insertBefore(b?.nodeType ? b : new Text(b), a)
+swap.replace = (from, to, parent) => to?.nodeType ? parent.replaceChild(to, from) :
+    from.nodeType === TEXT ? from.data = to : from.replaceWith(to)
 
 // DOM
 const TEXT = 3, ELEM = 1, ATTR = 2, COMM = 8, FRAG = 11, COMP = 6
@@ -57,13 +41,15 @@ export default function (statics) {
     result = htm.apply(h, count ? [statics] : arguments)
   }
 
-  return primitive(result) ? doc.createTextNode(result == null ? '' : result) :
-        Array.isArray(result) ? h(doc.createDocumentFragment(), null, ...result) :
-        result[_static] ? result.cloneNode(true) : result
+  return Array.isArray(result) ? h(doc.createDocumentFragment(), null, ...result) :
+        result?.[_static] ? result.cloneNode(true) :
+        result?.nodeType ? result :
+        new Text(result ?? '')
 }
 
 function hyperscript(tag, props, ...children) {
-  const init = this.init
+  const {init} = this
+
   if (typeof tag === 'string') {
     // hyperscript-compat
     if (/#|\./.test(tag)) {
@@ -72,7 +58,7 @@ function hyperscript(tag, props, ...children) {
       if (id) [id, ...cls] = id.split('.')
       else [tag, ...cls] = tag.split('.')
       if (id || cls.length) {
-        props = props || {}
+        props ||= {}
         if (id) props.id = id
         if (cls.length) props.class = cls
       }
@@ -97,7 +83,7 @@ function hyperscript(tag, props, ...children) {
       frag.append(...tag)
       tag = frag
     }
-    // component is completed - no need to post-merge children/props
+    // component is completed - no need to post-swap children/props
     return tag
   }
   // clean up previous observables
@@ -107,8 +93,8 @@ function hyperscript(tag, props, ...children) {
   let teardown = [], subs, i, child
   for (let name in props) {
     let value = props[name]
-    // FIXME: tweak own compiler
-    if (typeof value === 'string') value = value.replace(/false|null|undefined/g,'')
+    // classname can contain these casted literals
+    if (typeof value === 'string') value = value.replace(/\b(false|null|undefined)\b/g,'')
 
     // primitive is more probable also less expensive than observable check
     if (primitive(value)) attr(tag, name, value)
@@ -132,16 +118,16 @@ function hyperscript(tag, props, ...children) {
     if (child = children[i]) {
       // static nodes (cached by HTM) must be cloned, because h is not called for them more than once
       if (child[_static]) (children[i] = child.cloneNode(true))
-      else if (observable(child)) (subs || (subs = []))[i] = child, child = doc.createTextNode('')
+      else if (observable(child)) (subs || (subs = []))[i] = child, child = new Text
     }
 
   // append shortcut
   if (!tag.childNodes.length) tag.append(...flat(children))
-  else merge(tag, tag.childNodes, flat(children))
+  else swap(tag, tag.childNodes, flat(children))
 
   if (subs) teardown.push(...subs.map((sub, i) => sube(sub, child => (
     children[i] = child,
-    merge(tag, tag.childNodes, flat(children))
+    swap(tag, tag.childNodes, flat(children))
   ))))
 
   if (teardown.length) tag[_teardown] = teardown
@@ -189,61 +175,3 @@ attr = (el, k, v, desc) => (
     ''
   )
 )
-
-
-
-// FIXME: make same-key morph for faster updates
-// FIXME: modifying prev key can also make it faster
-const same = (a, b) => a === b || (a && b && a.nodeType === TEXT && b.nodeType === TEXT && a.data === b.data),
-
-// SOURCE: src/diff-inflate.js
-// FIXME: avoid insert, replace: do that before
-merge = (parent, a, b, end = null) => {
-  let i = 0, cur, next, bi, n = b.length, m = a.length
-
-  // skip head/tail
-  while (i < n && i < m && same(a[i], b[i])) i++
-  while (i < n && i < m && same(b[n-1], a[m-1])) end = b[--m, --n]
-
-  // append/prepend shortcut
-  if (i == m) while (i < n) insert(parent, b[i++], end)
-
-  else {
-    cur = a[i]
-
-    while (i < n) {
-      bi = b[i++], next = cur ? cur.nextSibling : end
-
-      // skip
-      if (same(cur, bi)) cur = next
-
-      // swap / replace
-      else if (i < n && same(b[i], next)) (replace(parent, cur, bi), cur = next)
-
-      // insert
-      else insert(parent, bi, cur)
-    }
-
-    // remove tail
-    while (cur != end) (next = cur.nextSibling, parent.removeChild(cur), cur = next)
-  }
-
-  return b
-},
-
-insert = (parent, a, before) => {
-  if (a != null) {
-    if (primitive(a)) parent.insertBefore(doc.createTextNode(a), before)
-    else parent.insertBefore(a, before)
-  }
-},
-
-// note the order is different from replaceNode(new, old)
-replace = (parent, from, to, end) => {
-  if (to != null) {
-    if (primitive(to)) if (from.nodeType === TEXT) from.data = to; else from.replaceWith(to)
-    else if (to.nodeType) parent.replaceChild(to, from)
-    // FIXME: make sure no slice needed here
-    else merge(parent, [from], to, end)
-  }
-}

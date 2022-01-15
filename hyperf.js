@@ -1,0 +1,250 @@
+var n=function(t,s,r,e){var u;s[0]=0;for(var h=1;h<s.length;h++){var p=s[h++],a=s[h]?(s[0]|=p?1:2,r[s[h++]]):s[++h];3===p?e[0]=a:4===p?e[1]=Object.assign(e[1]||{},a):5===p?(e[1]=e[1]||{})[s[++h]]=a:6===p?e[1][s[++h]]+=a+"":p?(u=t.apply(a,n(t,a,r,["",null])),e.push(u),a[0]?s[0]|=2:(s[h-2]=0,s[h]=u)):e.push(a);}return e},t=new Map;function htm(s){var r=t.get(this);return r||(r=new Map,t.set(this,r)),(r=n(this,r.get(s)||(r.set(s,r=function(n){for(var t,s,r=1,e="",u="",h=[0],p=function(n){1===r&&(n||(e=e.replace(/^\s*\n\s*|\s*\n\s*$/g,"")))?h.push(0,n,e):3===r&&(n||e)?(h.push(3,n,e),r=2):2===r&&"..."===e&&n?h.push(4,n,0):2===r&&e&&!n?h.push(5,0,!0,e):r>=5&&((e||!n&&5===r)&&(h.push(r,0,e,s),r=6),n&&(h.push(r,n,0,s),r=6)),e="";},a=0;a<n.length;a++){a&&(1===r&&p(),p(a));for(var l=0;l<n[a].length;l++)t=n[a][l],1===r?"<"===t?(p(),h=[h],r=3):e+=t:4===r?"--"===e&&">"===t?(r=1,e=""):e=t+e[0]:u?t===u?u="":e+=t:'"'===t||"'"===t?u=t:">"===t?(p(),r=1):r&&("="===t?(r=5,s=e,e=""):"/"===t&&(r<5||">"===n[a][l+1])?(p(),3===r&&(h=h[0]),r=h,(h=h[0]).push(2,0,r),r=0):" "===t||"\t"===t||"\n"===t||"\r"===t?(p(),r=2):e+=t),3===r&&"!--"===e&&(r=4,h=h[0]);}return p(),h}(s)),r),arguments,[])).length>1?r:r[0]}
+
+// lil subscriby (v-less)
+Symbol.observable||=Symbol('observable');
+
+// is target observable
+const observable = arg => arg && !!(
+  arg[Symbol.observable] || arg[Symbol.asyncIterator] ||
+  arg.call && arg.set ||
+  arg.subscribe || arg.then
+  // || arg.mutation && arg._state != null
+);
+
+var sube = (target, next, error, complete, stop) => 
+  target && (
+    target.subscribe?.( next, error, complete ) ||
+    target[Symbol.observable]?.().subscribe?.( next, error, complete ) ||
+    target.set && target.call?.(stop, next) || // observ
+    (
+      target.then?.(v => (!stop && next(v), complete?.()), error) ||
+      (async _ => {
+        try {
+          // FIXME: possible drawback: it will catch error happened in next, not only in iterator
+          for await (target of target) { if (stop) return; next(target); }
+          complete?.();
+        } catch (err) { error?.(err); }
+      })()
+    ) && (_ => stop=1)
+  );
+
+// inflate version of differ, ~260b
+// + no sets / maps used
+// + prepend/append/remove/clear short paths
+// + a can be live childNodes/HTMLCollection
+
+const swap = (parent, a, b, end = null) => {
+  let i = 0, cur, next, bi, n = b.length, m = a.length, { remove, same, insert, replace } = swap;
+
+  // skip head/tail
+  while (i < n && i < m && same(a[i], b[i])) i++;
+  while (i < n && i < m && same(b[n-1], a[m-1])) end = b[--m, --n];
+
+  // append/prepend/trim shortcuts
+  if (i == m) while (i < n) insert(end, b[i++], parent);
+  // FIXME: can't use shortcut for childNodes as input
+  // if (i == n) while (i < m) parent.removeChild(a[i++])
+
+  else {
+    cur = a[i];
+
+    while (i < n) {
+      bi = b[i++], next = cur ? cur.nextSibling : end;
+
+      // skip
+      if (same(cur, bi)) cur = next;
+
+      // swap / replace
+      else if (i < n && same(b[i], next)) (replace(cur, bi, parent), cur = next);
+
+      // insert
+      else insert(cur, bi, parent);
+    }
+
+    // remove tail
+    while (!same(cur, end)) (next = cur.nextSibling, remove(cur, parent), cur = next);
+  }
+
+  return b
+};
+
+swap.same = (a,b) => a == b;
+swap.replace = (a,b, parent) => parent.replaceChild(b, a);
+swap.insert = (a,b, parent) => parent.insertBefore(b, a);
+swap.remove = (a, parent) => parent.removeChild(a);
+
+const _teardown = Symbol(), _static = Symbol();
+
+Symbol.dispose||=Symbol('dispose');
+
+// configure swapper
+// FIXME: make same-key morph for faster updates
+// FIXME: modifying prev key can also make it faster
+// SOURCE: src/diff-inflate.js
+// FIXME: avoid insert, replace: do that before
+swap.same = (a, b) => a === b || a?.data != null && a?.data === b?.data;
+swap.insert = (a, b, parent) => parent.insertBefore(b?.nodeType ? b : new Text(b), a);
+swap.replace = (from, to, parent) => to?.nodeType ? parent.replaceChild(to, from) :
+    from.nodeType === TEXT ? from.data = to : from.replaceWith(to);
+
+// DOM
+const TEXT = 3;
+
+const cache = new WeakSet,
+      ctx = {init:false},
+      doc=document;
+
+const h = hyperscript.bind(ctx);
+
+function index (statics) {
+  if (!Array.isArray(statics)) return h(...arguments)
+
+  // HTM caches nodes that don't have attr or children fields
+  // eg. <a><b>${1}</b></a> - won't cache `a`,`b`, but <a>${1}<b/></a> - will cache `b`
+  // for that purpose we first build template with blank fields, marking all fields as tpl
+  // NOTE: static nodes caching is bound to htm.this (h) function, so can't substitute it
+  // NOTE: we can't use first non-cached call result, because it serves as source for further cloning static nodes
+  let result, count = 1;
+  if (!cache.has(statics)) count++, cache.add(statics);
+  while (count--) {
+    ctx.init = count ? true : false;
+    // init render may setup observables, which is undesirable - so we skip attributes
+    result = htm.apply(h, count ? [statics] : arguments);
+  }
+
+  return Array.isArray(result) ? h(doc.createDocumentFragment(), null, ...result) :
+        result?.[_static] ? result.cloneNode(true) :
+        result?.nodeType ? result :
+        new Text(result ?? '')
+}
+
+function hyperscript(tag, props, ...children) {
+  const {init} = this;
+
+  if (typeof tag === 'string') {
+    // hyperscript-compat
+    if (/#|\./.test(tag)) {
+      let id, cls;
+      [tag, id] = tag.split('#');
+      if (id) [id, ...cls] = id.split('.');
+      else [tag, ...cls] = tag.split('.');
+      if (id || cls.length) {
+        props ||= {};
+        if (id) props.id = id;
+        if (cls.length) props.class = cls;
+      }
+    }
+    tag = doc.createElement(tag);
+
+    // shortcut for faster creation, static nodes are really simple
+    if (init) {
+      tag[_static] = true;
+      for (let name in props) attr(tag, name, props[name]);
+      tag.append(...flat(children));
+      return tag
+    }
+  }
+  // init call is irrelevant for dynamic nodes
+  else if (init) return
+  else if (typeof tag === 'function') {
+    tag = tag({children, ...props});
+    // FIXME: is there a more elegant way?
+    if (Array.isArray(tag)) {
+      let frag = doc.createDocumentFragment();
+      frag.append(...tag);
+      tag = frag;
+    }
+    // component is completed - no need to post-swap children/props
+    return tag
+  }
+  // clean up previous observables
+  else if (tag[Symbol.dispose]) tag[Symbol.dispose]();
+
+  // apply props
+  let teardown = [], subs, i, child;
+  for (let name in props) {
+    let value = props[name];
+    // classname can contain these casted literals
+    if (typeof value === 'string') value = value.replace(/\b(false|null|undefined)\b/g,'');
+
+    // primitive is more probable also less expensive than observable check
+    if (primitive(value)) attr(tag, name, value);
+    else if (observable(value)) teardown.push(sube(value, v => attr(tag, name, v)));
+    else if (name === 'style') {
+      for (let s in value) {
+        let v = value[s];
+        if(observable(v)) teardown.push(sube(v, v => tag.style.setProperty(s, v)));
+        else {
+          let match = v.match(/(.*)\W+!important\W*$/);
+          if (match) tag.style.setProperty(s, match[1], 'important');
+          else tag.style.setProperty(s, v);
+        }
+      }
+    }
+    else attr(tag, name, value);
+  }
+
+  // detect observables
+  for (i = 0; i < children.length; i++)
+    if (child = children[i]) {
+      // static nodes (cached by HTM) must be cloned, because h is not called for them more than once
+      if (child[_static]) (children[i] = child.cloneNode(true));
+      else if (observable(child)) (subs || (subs = []))[i] = child, child = new Text;
+    }
+
+  // append shortcut
+  if (!tag.childNodes.length) tag.append(...flat(children));
+  else swap(tag, tag.childNodes, flat(children));
+
+  if (subs) teardown.push(...subs.map((sub, i) => sube(sub, child => (
+    children[i] = child,
+    swap(tag, tag.childNodes, flat(children))
+  ))));
+
+  if (teardown.length) tag[_teardown] = teardown;
+  tag[Symbol.dispose] = dispose;
+
+  return tag
+}
+
+function dispose () {if (this[_teardown]) for (let fn of this[_teardown]) fn.call?fn():fn.unsubscribe(); this[_teardown] = null; }
+
+const flat = (children) => {
+  let out = [], i = 0, item;
+  for (; i < children.length;) {
+    if ((item = children[i++]) != null) {
+      if (primitive(item) || item.nodeType) out.push(item);
+      else if (item[Symbol.iterator]) for (item of item) out.push(item);
+    }
+  }
+  return out
+},
+
+// FIXME: just check !val || typeof val !== 'object'
+primitive = (val) =>
+  !val ||
+  typeof val === 'string' ||
+  typeof val === 'boolean' ||
+  typeof val === 'number' ||
+  (typeof val === 'object' ? (val instanceof RegExp || val instanceof Date) :
+  typeof val !== 'function'),
+
+// excerpt from element-props
+// FIXME: use element-props
+attr = (el, k, v, desc) => (
+  el[k] !== v &&
+  // avoid readonly props https://jsperf.com/element-own-props-set/1
+  (!(k in el.constructor.prototype) || !(desc = Object.getOwnPropertyDescriptor(el.constructor.prototype, k)) || desc.set) &&
+    (el[k] = v),
+  v === false || v == null ? el.removeAttribute(k) :
+  typeof v !== 'function' && el.setAttribute(k,
+    v === true ? '' :
+    typeof v === 'number' || typeof v === 'string' ? v :
+    k === 'class' && Array.isArray(v) ? v.filter(Boolean).join(' ') :
+    k === 'style' && v.constructor === Object ?
+      (k=v,v=Object.values(v),Object.keys(k).map((k,i) => `${k}: ${v[i]};`).join(' ')) :
+    ''
+  )
+);
+
+export { _static, _teardown, index as default, h };

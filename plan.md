@@ -1,8 +1,12 @@
 # plan
 
-* [ ] make sure main points to src/index always, not bundle: needed for external bundling
+* [ ] make use of element-props instead of attr
 
-* [ ] make tests use remote deps as peer-deps, reduce number of dev dep libs
+* [ ] get rid of primitive checker
+
+* [x] make sure main points to src/index always, not bundle: needed for external bundling
+
+* [x] make tests use remote deps as peer-deps, reduce number of dev dep libs
 
 * [x] name: hyperf
   * examples
