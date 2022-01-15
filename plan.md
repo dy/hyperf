@@ -1,5 +1,9 @@
 # plan
 
+* [ ] make better use of diffing algo: it's underused now https://github.com/spectjs/spect/issues/262, https://github.com/spectjs/spect/issues/233
+
+* [ ] docs: rxjs https://github.com/spectjs/spect/issues/208
+
 * [ ] make use of element-props instead of attr
 
 * [ ] get rid of primitive checker
