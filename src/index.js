@@ -1,10 +1,36 @@
 import htm from '../node_modules/htm/dist/htm.module.js'
 import sube, { observable } from '../node_modules/sube/sube.js'
+import swap from '../node_modules/swapdom/swap-inflate.js'
 
 export const _teardown = Symbol(), _static = Symbol()
 
 Symbol.dispose||=Symbol('dispose')
 
+// configure swapper
+// FIXME: make same-key morph for faster updates
+// FIXME: modifying prev key can also make it faster
+// SOURCE: src/diff-inflate.js
+// FIXME: avoid insert, replace: do that before
+Object.assign(swap, {
+  same(a, b) { a === b || (a && b && a.nodeType === TEXT && b.nodeType === TEXT && a.data === b.data) },
+
+  insert(a, b, parent) {
+    if (b != null) {
+      if (primitive(b)) parent.insertBefore(doc.createTextNode(b), a)
+      else parent.insertBefore(b, a)
+    }
+  },
+
+  // note the order is different from replaceNode(new, old)
+  replace (from, to, parent) {
+    if (to != null) {
+      if (primitive(to)) if (from.nodeType === TEXT) from.data = to; else from.replaceWith(to)
+      else if (to.nodeType) parent.replaceChild(to, from)
+      // FIXME: make sure no slice needed here
+      else merge(parent, [from], to, from.nextSibling)
+    }
+  }
+})
 
 // DOM
 const TEXT = 3, ELEM = 1, ATTR = 2, COMM = 8, FRAG = 11, COMP = 6
@@ -15,7 +41,7 @@ const cache = new WeakSet,
 
 export const h = hyperscript.bind(ctx)
 
-export default (statics) => {
+export default function (statics) {
   if (!Array.isArray(statics)) return h(...arguments)
 
   // HTM caches nodes that don't have attr or children fields
@@ -117,8 +143,9 @@ function hyperscript(tag, props, ...children) {
     children[i] = child,
     merge(tag, tag.childNodes, flat(children))
   ))))
+
   if (teardown.length) tag[_teardown] = teardown
-  tag[Symbol.dispose] = tag.unsubscribe = dispose
+  tag[Symbol.dispose] = dispose
 
   return tag
 }
@@ -145,10 +172,29 @@ primitive = (val) =>
   (typeof val === 'object' ? (val instanceof RegExp || val instanceof Date) :
   typeof val !== 'function'),
 
+// excerpt from element-props
+// FIXME: use element-props
+attr = (el, k, v, desc) => (
+  el[k] !== v &&
+  // avoid readonly props https://jsperf.com/element-own-props-set/1
+  (!(k in el.constructor.prototype) || !(desc = Object.getOwnPropertyDescriptor(el.constructor.prototype, k)) || desc.set) &&
+    (el[k] = v),
+  v === false || v == null ? el.removeAttribute(k) :
+  typeof v !== 'function' && el.setAttribute(k,
+    v === true ? '' :
+    typeof v === 'number' || typeof v === 'string' ? v :
+    k === 'class' && Array.isArray(v) ? v.filter(Boolean).join(' ') :
+    k === 'style' && v.constructor === Object ?
+      (k=v,v=Object.values(v),Object.keys(k).map((k,i) => `${k}: ${v[i]};`).join(' ')) :
+    ''
+  )
+)
+
+
 
 // FIXME: make same-key morph for faster updates
 // FIXME: modifying prev key can also make it faster
-same = (a, b) => a === b || (a && b && a.nodeType === TEXT && b.nodeType === TEXT && a.data === b.data),
+const same = (a, b) => a === b || (a && b && a.nodeType === TEXT && b.nodeType === TEXT && a.data === b.data),
 
 // SOURCE: src/diff-inflate.js
 // FIXME: avoid insert, replace: do that before
@@ -200,21 +246,4 @@ replace = (parent, from, to, end) => {
     // FIXME: make sure no slice needed here
     else merge(parent, [from], to, end)
   }
-},
-
-// excerpt from element-props
-attr = (el, k, v, desc) => (
-  el[k] !== v &&
-  // avoid readonly props https://jsperf.com/element-own-props-set/1
-  (!(k in el.constructor.prototype) || !(desc = Object.getOwnPropertyDescriptor(el.constructor.prototype, k)) || desc.set) &&
-    (el[k] = v),
-  v === false || v == null ? el.removeAttribute(k) :
-  typeof v !== 'function' && el.setAttribute(k,
-    v === true ? '' :
-    typeof v === 'number' || typeof v === 'string' ? v :
-    k === 'class' && Array.isArray(v) ? v.filter(Boolean).join(' ') :
-    k === 'style' && v.constructor === Object ?
-      (k=v,v=Object.values(v),Object.keys(k).map((k,i) => `${k}: ${v[i]};`).join(' ')) :
-    ''
-  )
-)
+}

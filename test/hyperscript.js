@@ -1,55 +1,48 @@
-import test from './libs/tst.js'
-import { h, v } from '../index.js'
+import h from '../src/index.js'
+import test, {is, ok} from '../node_modules/tst/tst.js'
+import v from '../node_modules/value-ref/value-ref.min.js'
 import o from './libs/observable.js'
 
 test('hyperscript: simple', function (t) {
-  t.is(h('h1').outerHTML, '<h1></h1>')
-  t.is(h('h1', null, 'hello world').outerHTML, '<h1>hello world</h1>')
-  t.end()
+  is(h('h1').outerHTML, '<h1></h1>')
+  is(h('h1', null, 'hello world').outerHTML, '<h1>hello world</h1>')
 })
 
 test('hyperscript: nested', function(t) {
-  t.is(h('div', null,
+  is(h('div', null,
     h('h1', null, 'Title'),
     h('p', null, 'Paragraph')
   ).outerHTML, '<div><h1>Title</h1><p>Paragraph</p></div>')
-  t.end()
 })
 
 test('hyperscript: arrays for nesting is ok', function(t){
-  t.is(h('div', null,
+  is(h('div', null,
     [h('h1', null, 'Title'), h('p', null, 'Paragraph')]
   ).outerHTML, '<div><h1>Title</h1><p>Paragraph</p></div>')
-  t.end()
 })
 
 test('hyperscript: can use namespace in name', function(t){
-  t.is(h('myns:mytag').outerHTML, '<myns:mytag></myns:mytag>');
-  t.end()
+  is(h('myns:mytag').outerHTML, '<myns:mytag></myns:mytag>');
 })
 
 test('hyperscript: can use id selector', function(t){
-  t.is(h('div#frame').outerHTML, '<div id="frame"></div>')
-  t.end()
+  is(h('div#frame').outerHTML, '<div id="frame"></div>')
 })
 
 test('hyperscript: can use class selector', function(t){
-  t.is(h('div.panel').outerHTML, '<div class="panel"></div>')
-  t.end()
+  is(h('div.panel').outerHTML, '<div class="panel"></div>')
 })
 
 test.skip('hyperscript: can default element types', function(t){
-  t.is(h('.panel').outerHTML, '<div class="panel"></div>')
-  t.is(h('#frame').outerHTML, '<div id="frame"></div>')
-  t.end()
+  is(h('.panel').outerHTML, '<div class="panel"></div>')
+  is(h('#frame').outerHTML, '<div id="frame"></div>')
 })
 
 test('hyperscript: can set properties', function(t){
   var a = h('a', {href: 'http://google.com'})
-  t.is(a.href, 'http://google.com/')
+  is(a.href, 'http://google.com/')
   var checkbox = h('input', {name: 'yes', type: 'checkbox'})
-  t.is(checkbox.outerHTML, '<input name="yes" type="checkbox">')
-  t.end()
+  is(checkbox.outerHTML, '<input name="yes" type="checkbox">')
 })
 
 test('hyperscript: registers event handlers', function(t){
@@ -58,66 +51,57 @@ test('hyperscript: registers event handlers', function(t){
   var onClick = () => {log.push('click')}
   var p = h('p', {onclick: onClick}, 'something')
   p.click(p)
-  t.is(log, ['click'])
-  t.end()
+  is(log, ['click'])
 })
 
 test('hyperscript: sets styles', function(t){
   var div = h('div', {style: {'color': 'red'}})
-  t.is(div.style.color, 'red')
-  t.end()
+  is(div.style.color, 'red')
 })
 
 test('hyperscript: sets styles as text', function(t){
   var div = h('div', {style: 'color: red'})
-  t.is(div.style.color, 'red')
-  t.end()
+  is(div.style.color, 'red')
 })
 
 test('hyperscript: sets data attributes', function(t){
   var div = h('div', {'data-value': 5})
-  t.is(div.getAttribute('data-value'), '5') // failing for IE9
-  t.end()
+  is(div.getAttribute('data-value'), '5') // failing for IE9
 })
 
 test('hyperscript: boolean, number, date, regex get to-string\'ed', function(t){
   var e = h('p', null, true, false, 4, new Date('Mon Jan 15 2001'), /hello/)
-  t.ok(e.outerHTML.match(/<p>truefalse4Mon Jan 15.+2001.*\/hello\/<\/p>/))
-  t.end()
+  ok(e.outerHTML.match(/<p>truefalse4Mon Jan 15.+2001.*\/hello\/<\/p>/))
 })
 
 test('hyperscript: observable content', function(t){
   var title = o()
   title('Welcome to HyperScript!')
   var h1 = h('h1', null, title)
-  t.is(h1.outerHTML, '<h1>Welcome to HyperScript!</h1>')
+  is(h1.outerHTML, '<h1>Welcome to HyperScript!</h1>')
   title('Leave, creep!')
-  t.is(h1.outerHTML, '<h1>Leave, creep!</h1>')
-  t.end()
+  is(h1.outerHTML, '<h1>Leave, creep!</h1>')
 })
 
 test('hyperscript: observable property', function(t){
   var checked = o()
   checked(true)
   var checkbox = h('input', {type: 'checkbox', checked: checked})
-  t.is(checkbox.checked, true)
+  is(checkbox.checked, true)
   checked(false)
-  t.is(checkbox.checked, false)
-  t.end()
+  is(checkbox.checked, false)
 })
 
 test('hyperscript: observable style', function(t){
   var color = o()
   color('red')
   var div = h('div', {style: {'color': color}})
-  t.is(div.style.color, 'red')
+  is(div.style.color, 'red')
   color('blue')
-  t.is(div.style.color, 'blue')
-  t.end()
+  is(div.style.color, 'blue')
 })
 
 test('hyperscript: unicode selectors', function (t) {
-  // t.is(h('.⛄').outerHTML, '<div class="⛄"></div>')
-  t.is(h('span#⛄').outerHTML, '<span id="⛄"></span>')
-  t.end()
+  // is(h('.⛄').outerHTML, '<div class="⛄"></div>')
+  is(h('span#⛄').outerHTML, '<span id="⛄"></span>')
 })
