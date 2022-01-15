@@ -1,6 +1,7 @@
 import htm from '../node_modules/htm/dist/htm.mjs'
 import sube, { observable } from '../node_modules/sube/sube.js'
 import swap from '../node_modules/swapdom/swap-inflate.js'
+import { prop as attr } from '../node_modules/element-props/element-props.js'
 
 export const _teardown = Symbol(), _static = Symbol()
 
@@ -156,22 +157,4 @@ primitive = (val) =>
   typeof val === 'boolean' ||
   typeof val === 'number' ||
   (typeof val === 'object' ? (val instanceof RegExp || val instanceof Date) :
-  typeof val !== 'function'),
-
-// excerpt from element-props
-// FIXME: use element-props
-attr = (el, k, v, desc) => (
-  el[k] !== v &&
-  // avoid readonly props https://jsperf.com/element-own-props-set/1
-  (!(k in el.constructor.prototype) || !(desc = Object.getOwnPropertyDescriptor(el.constructor.prototype, k)) || desc.set) &&
-    (el[k] = v),
-  v === false || v == null ? el.removeAttribute(k) :
-  typeof v !== 'function' && el.setAttribute(k,
-    v === true ? '' :
-    typeof v === 'number' || typeof v === 'string' ? v :
-    k === 'class' && Array.isArray(v) ? v.filter(Boolean).join(' ') :
-    k === 'style' && v.constructor === Object ?
-      (k=v,v=Object.values(v),Object.keys(k).map((k,i) => `${k}: ${v[i]};`).join(' ')) :
-    ''
-  )
-)
+  typeof val !== 'function')

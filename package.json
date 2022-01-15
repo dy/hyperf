@@ -45,6 +45,7 @@
   },
   "homepage": "https://github.com/spectjs/hyperf#readme",
   "dependencies": {
+    "element-props": "^2.0.1",
     "htm": "^3.1.0",
     "sube": "^1.0.3",
     "swapdom": "^1.1.1"

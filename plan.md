@@ -4,7 +4,7 @@
 
 * [ ] docs: rxjs https://github.com/spectjs/spect/issues/208
 
-* [ ] make use of element-props instead of attr
+* [x] make use of element-props instead of attr
 
 * [ ] get rid of primitive checker
 
