@@ -6,7 +6,7 @@
 
 * [x] make use of element-props instead of attr
 
-* [ ] get rid of primitive checker
+* [x] get rid of primitive checker
 
 * [x] make sure main points to src/index always, not bundle: needed for external bundling
 

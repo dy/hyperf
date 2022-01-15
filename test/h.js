@@ -1,6 +1,6 @@
 import t, {is, ok, any} from '../node_modules/tst/tst.js'
 import v from '../node_modules/value-ref/value-ref.min.js'
-import h, { h as sh } from '../src/index.js'
+import h from '../src/index.js'
 // import h, { default as sh } from './libs/h21.js'
 // import h, { default as sh } from './libs/h-compact.js'
 // import h, { default as sh } from './libs/h-vm.js'

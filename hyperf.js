@@ -73,7 +73,25 @@ swap.replace = (a,b, parent) => parent.replaceChild(b, a);
 swap.insert = (a,b, parent) => parent.insertBefore(b, a);
 swap.remove = (a, parent) => parent.removeChild(a);
 
-const _teardown = Symbol(), _static = Symbol();
+// auto-parse pkg in 2 lines (no object/array detection)
+const prop = (el, k, v, desc) => (
+  k = k.slice(0,2)==='on' ? k.toLowerCase() : k, // onClick → onclick
+  // avoid readonly props https://jsperf.com/element-own-props-set/1
+  el[k] !== v && (
+    !(k in el.constructor.prototype) || !(desc = Object.getOwnPropertyDescriptor(el.constructor.prototype, k)) || desc.set
+  ) && (el[k] = v),
+  v === false || v == null ? el.removeAttribute(k) :
+  typeof v !== 'function' && el.setAttribute(k,
+    v === true ? '' :
+    typeof v === 'number' || typeof v === 'string' ? v :
+    k === 'class' && Array.isArray(v) ? v.filter(Boolean).join(' ') :
+    k === 'style' && v.constructor === Object ?
+      (k=v,v=Object.values(v),Object.keys(k).map((k,i) => `${k}: ${v[i]};`).join(' ')) :
+    ''
+  )
+);
+
+const _static = Symbol();
 
 Symbol.dispose||=Symbol('dispose');
 
@@ -87,14 +105,22 @@ swap.insert = (a, b, parent) => parent.insertBefore(b?.nodeType ? b : new Text(b
 swap.replace = (from, to, parent) => to?.nodeType ? parent.replaceChild(to, from) :
     from.nodeType === TEXT ? from.data = to : from.replaceWith(to);
 
-// DOM
+
 const TEXT = 3;
 
 const cache = new WeakSet,
       ctx = {init:false},
-      doc=document;
-
-const h = hyperscript.bind(ctx);
+      doc=document,
+      h = hyperscript.bind(ctx),
+      flat = (children) => {
+        let out = [], i = 0, item;
+        for (; i < children.length;)
+          if ((item = children[i++]) != null)
+            // .values is common for NodeList / Array indicator (.forEach is used by rxjs, iterator is by string)
+            if (item.values) for (item of item) out.push(item);
+            else if (!observable(item)) out.push(item);
+        return out
+      };
 
 function index (statics) {
   if (!Array.isArray(statics)) return h(...arguments)
@@ -139,7 +165,7 @@ function hyperscript(tag, props, ...children) {
     // shortcut for faster creation, static nodes are really simple
     if (init) {
       tag[_static] = true;
-      for (let name in props) attr(tag, name, props[name]);
+      for (let name in props) prop(tag, name, props[name]);
       tag.append(...flat(children));
       return tag
     }
@@ -161,19 +187,18 @@ function hyperscript(tag, props, ...children) {
   else if (tag[Symbol.dispose]) tag[Symbol.dispose]();
 
   // apply props
-  let teardown = [], subs, i, child;
+  let unsub = [], subs, i, child;
   for (let name in props) {
     let value = props[name];
     // classname can contain these casted literals
     if (typeof value === 'string') value = value.replace(/\b(false|null|undefined)\b/g,'');
 
     // primitive is more probable also less expensive than observable check
-    if (primitive(value)) attr(tag, name, value);
-    else if (observable(value)) teardown.push(sube(value, v => attr(tag, name, v)));
-    else if (name === 'style') {
+    if (observable(value)) unsub.push(sube(value, v => prop(tag, name, v)));
+    else if (name === 'style' && typeof value !== 'string') {
       for (let s in value) {
         let v = value[s];
-        if(observable(v)) teardown.push(sube(v, v => tag.style.setProperty(s, v)));
+        if(observable(v)) unsub.push(sube(v, v => tag.style.setProperty(s, v)));
         else {
           let match = v.match(/(.*)\W+!important\W*$/);
           if (match) tag.style.setProperty(s, match[1], 'important');
@@ -181,7 +206,7 @@ function hyperscript(tag, props, ...children) {
         }
       }
     }
-    else attr(tag, name, value);
+    else prop(tag, name, value);
   }
 
   // detect observables
@@ -196,55 +221,16 @@ function hyperscript(tag, props, ...children) {
   if (!tag.childNodes.length) tag.append(...flat(children));
   else swap(tag, tag.childNodes, flat(children));
 
-  if (subs) teardown.push(...subs.map((sub, i) => sube(sub, child => (
+  if (subs) unsub.push(...subs.map((sub, i) => sube(sub, child => (
     children[i] = child,
     swap(tag, tag.childNodes, flat(children))
   ))));
 
-  if (teardown.length) tag[_teardown] = teardown;
-  tag[Symbol.dispose] = dispose;
+  if (unsub.length) tag[Symbol.dispose] = () => {
+    for (let fn of unsub) fn.call ? fn() : fn.unsubscribe();
+  };
 
   return tag
 }
 
-function dispose () {if (this[_teardown]) for (let fn of this[_teardown]) fn.call?fn():fn.unsubscribe(); this[_teardown] = null; }
-
-const flat = (children) => {
-  let out = [], i = 0, item;
-  for (; i < children.length;) {
-    if ((item = children[i++]) != null) {
-      if (primitive(item) || item.nodeType) out.push(item);
-      else if (item[Symbol.iterator]) for (item of item) out.push(item);
-    }
-  }
-  return out
-},
-
-// FIXME: just check !val || typeof val !== 'object'
-primitive = (val) =>
-  !val ||
-  typeof val === 'string' ||
-  typeof val === 'boolean' ||
-  typeof val === 'number' ||
-  (typeof val === 'object' ? (val instanceof RegExp || val instanceof Date) :
-  typeof val !== 'function'),
-
-// excerpt from element-props
-// FIXME: use element-props
-attr = (el, k, v, desc) => (
-  el[k] !== v &&
-  // avoid readonly props https://jsperf.com/element-own-props-set/1
-  (!(k in el.constructor.prototype) || !(desc = Object.getOwnPropertyDescriptor(el.constructor.prototype, k)) || desc.set) &&
-    (el[k] = v),
-  v === false || v == null ? el.removeAttribute(k) :
-  typeof v !== 'function' && el.setAttribute(k,
-    v === true ? '' :
-    typeof v === 'number' || typeof v === 'string' ? v :
-    k === 'class' && Array.isArray(v) ? v.filter(Boolean).join(' ') :
-    k === 'style' && v.constructor === Object ?
-      (k=v,v=Object.values(v),Object.keys(k).map((k,i) => `${k}: ${v[i]};`).join(' ')) :
-    ''
-  )
-);
-
-export { _static, _teardown, index as default, h };
+export { _static, index as default };

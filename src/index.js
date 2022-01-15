@@ -3,7 +3,7 @@ import sube, { observable } from '../node_modules/sube/sube.js'
 import swap from '../node_modules/swapdom/swap-inflate.js'
 import { prop as attr } from '../node_modules/element-props/element-props.js'
 
-export const _teardown = Symbol(), _static = Symbol()
+export const _static = Symbol()
 
 Symbol.dispose||=Symbol('dispose')
 
@@ -17,14 +17,22 @@ swap.insert = (a, b, parent) => parent.insertBefore(b?.nodeType ? b : new Text(b
 swap.replace = (from, to, parent) => to?.nodeType ? parent.replaceChild(to, from) :
     from.nodeType === TEXT ? from.data = to : from.replaceWith(to)
 
-// DOM
+
 const TEXT = 3, ELEM = 1, ATTR = 2, COMM = 8, FRAG = 11, COMP = 6
 
 const cache = new WeakSet,
       ctx = {init:false},
-      doc=document
-
-export const h = hyperscript.bind(ctx)
+      doc=document,
+      h = hyperscript.bind(ctx),
+      flat = (children) => {
+        let out = [], i = 0, item
+        for (; i < children.length;)
+          if ((item = children[i++]) != null)
+            // .values is common for NodeList / Array indicator (.forEach is used by rxjs, iterator is by string)
+            if (item.values) for (item of item) out.push(item)
+            else if (!observable(item)) out.push(item)
+        return out
+      }
 
 export default function (statics) {
   if (!Array.isArray(statics)) return h(...arguments)
@@ -91,19 +99,18 @@ function hyperscript(tag, props, ...children) {
   else if (tag[Symbol.dispose]) tag[Symbol.dispose]()
 
   // apply props
-  let teardown = [], subs, i, child
+  let unsub = [], subs, i, child
   for (let name in props) {
     let value = props[name]
     // classname can contain these casted literals
     if (typeof value === 'string') value = value.replace(/\b(false|null|undefined)\b/g,'')
 
     // primitive is more probable also less expensive than observable check
-    if (primitive(value)) attr(tag, name, value)
-    else if (observable(value)) teardown.push(sube(value, v => attr(tag, name, v)))
-    else if (name === 'style') {
+    if (observable(value)) unsub.push(sube(value, v => attr(tag, name, v)))
+    else if (name === 'style' && typeof value !== 'string') {
       for (let s in value) {
         let v = value[s]
-        if(observable(v)) teardown.push(sube(v, v => tag.style.setProperty(s, v)))
+        if(observable(v)) unsub.push(sube(v, v => tag.style.setProperty(s, v)))
         else {
           let match = v.match(/(.*)\W+!important\W*$/);
           if (match) tag.style.setProperty(s, match[1], 'important')
@@ -126,35 +133,14 @@ function hyperscript(tag, props, ...children) {
   if (!tag.childNodes.length) tag.append(...flat(children))
   else swap(tag, tag.childNodes, flat(children))
 
-  if (subs) teardown.push(...subs.map((sub, i) => sube(sub, child => (
+  if (subs) unsub.push(...subs.map((sub, i) => sube(sub, child => (
     children[i] = child,
     swap(tag, tag.childNodes, flat(children))
   ))))
 
-  if (teardown.length) tag[_teardown] = teardown
-  tag[Symbol.dispose] = dispose
+  if (unsub.length) tag[Symbol.dispose] = () => {
+    for (let fn of unsub) fn.call ? fn() : fn.unsubscribe();
+  }
 
   return tag
 }
-
-function dispose () {if (this[_teardown]) for (let fn of this[_teardown]) fn.call?fn():fn.unsubscribe(); this[_teardown] = null }
-
-const flat = (children) => {
-  let out = [], i = 0, item
-  for (; i < children.length;) {
-    if ((item = children[i++]) != null) {
-      if (primitive(item) || item.nodeType) out.push(item)
-      else if (item[Symbol.iterator]) for (item of item) out.push(item)
-    }
-  }
-  return out
-},
-
-// FIXME: just check !val || typeof val !== 'object'
-primitive = (val) =>
-  !val ||
-  typeof val === 'string' ||
-  typeof val === 'boolean' ||
-  typeof val === 'number' ||
-  (typeof val === 'object' ? (val instanceof RegExp || val instanceof Date) :
-  typeof val !== 'function')
