@@ -1,15 +1,15 @@
-# hyperf
+# hyperf [![test](https://github.com/spectjs/hyperf/actions/workflows/test.yml/badge.svg)](https://github.com/spectjs/hyperf/actions/workflows/test.yml) [![npm version](https://img.shields.io/npm/v/hyperf)](http://npmjs.org/hyperf)
 
-> Hypertext fragments builder (printf for htm).
+> Hypertext fragments builder. (Printf for HTM).
 
-#### _`` el = h`...content` ``_
+#### _``const el = h`...content` ``_
 
 Create hypertext fragment via tagged literal with [htm](https://github.com/htm) syntax support.<br/>
-Allows reactive fields: _Promise_, _Async Iterable_, [Observable](https://github.com/tc39/proposal-observable), [RXjs](https://rxjs-dev.firebaseapp.com/guide/overview), any [observ\*](https://github.com/Raynos/observ) etc., see [sube](https://github.com/spectjs/sube).
+Allows reactive fields: _Promise_, _AsyncIterable_, _Observable_ etc., see [sube](https://github.com/spectjs/sube).
 
 ```js
 import h from './hyperf.js'
-import v from './vref.js'
+import v from './value-ref.js'
 
 const text = v('foo') // reactive value
 
@@ -19,8 +19,9 @@ const a = h`<a>${ text }</a>`
 text.value = 'bar'
 // <a>bar</a>
 
-const frag = h`<x ...${{x: 1}}>1</x><y>2</y>`  // htm syntax
-h`<${a}>${ frag }</a>`
+const frag = h`<x ...${{x: 1}}>1</x><y>2</y>`
+
+h`<${a}>${ frag }</a>` // update node
 // <a><x x="1">1</x><y>2</y></a>
 
 a.dispose() // destroy observers
@@ -28,7 +29,7 @@ a.dispose() // destroy observers
 
 ### JSX
 
-To use hyperf as JSX, just provide directive for your builder (webpack or esbuild):
+To use _hyperf_ as JSX, just provide directive for your builder (webpack or esbuild):
 
 ```jsx
 import h from 'hyperf' /* jsx h */
