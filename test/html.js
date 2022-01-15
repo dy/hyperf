@@ -844,3 +844,9 @@ t.todo('html: element exposes internal id refs', async t=> {
   is(x.z, x.lastChild)
   is(x.childNodes.length, 3)
 })
+
+t('html: set template fields', async t => {
+  let el = h`<div x={{x}} onclick="{{ inc() }}"></div>`
+  is(el.attributes.x.value, "{{x}}")
+  is(el.attributes.onclick.value, "{{ inc() }}")
+})
