@@ -51,6 +51,7 @@
     "swapdom": "^1.1.1"
   },
   "devDependencies": {
+    "es-module-shims": "^1.4.1",
     "jsdom": "^19.0.0",
     "rollup": "^2.64.0",
     "terser": "^5.10.0",

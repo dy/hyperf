@@ -1,7 +1,7 @@
-import htm from '../node_modules/htm/dist/htm.mjs'
-import sube, { observable } from '../node_modules/sube/sube.js'
-import swap from '../node_modules/swapdom/swap-inflate.js'
-import { prop as attr } from '../node_modules/element-props/element-props.js'
+import htm from 'htm'
+import sube, { observable } from 'sube'
+import swap from 'swapdom'
+import { prop as attr } from 'element-props'
 
 export const _static = Symbol()
 
