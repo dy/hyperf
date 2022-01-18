@@ -25,7 +25,7 @@
     "rxjs"
   ],
   "scripts": {
-    "test": "node -r ./test/register.cjs test/index.js",
+    "test": "node --expose-gc -r ./test/register.cjs test/index.js",
     "build": "rollup src/index.js -p @rollup/plugin-node-resolve --file hyperf.js --format esm",
     "minify": "terser hyperf.js -o hyperf.min.js --module -c passes=3 -m"
   },
@@ -45,9 +45,9 @@
   },
   "homepage": "https://github.com/spectjs/hyperf#readme",
   "dependencies": {
-    "element-props": "^2.0.1",
+    "element-props": "^2.0.3",
     "htm": "^3.1.0",
-    "sube": "^1.0.3",
+    "sube": "^2.1.0",
     "swapdom": "^1.1.1"
   },
   "devDependencies": {
@@ -57,7 +57,7 @@
     "rollup": "^2.64.0",
     "terser": "^5.10.0",
     "tst": "^7.1.0",
-    "value-ref": "^1.2.1",
+    "value-ref": "^1.4.3",
     "wait-please": "^3.1.0"
   }
 }

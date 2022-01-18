@@ -5,8 +5,6 @@ import { prop as attr } from 'element-props'
 
 export const _static = Symbol()
 
-Symbol.dispose||=Symbol('dispose')
-
 // configure swapper
 // FIXME: make same-key morph for faster updates
 // FIXME: modifying prev key can also make it faster
@@ -95,21 +93,19 @@ function hyperscript(tag, props, ...children) {
     // component is completed - no need to post-swap children/props
     return tag
   }
-  // clean up previous observables
-  else tag[Symbol.dispose]?.()
 
   // apply props
-  let unsub = [], subs = [], i, child, name, value, s, v, match
+  let subs = [], i, child, name, value, s, v, match
   for (name in props) {
     value = props[name]
     // classname can contain these casted literals
     if (typeof value === 'string') value = value.replace(/\b(false|null|undefined)\b/g,'')
 
     // primitive is more probable also less expensive than observable check
-    if (observable(value)) unsub.push(sube(value, v => attr(tag, name, v)))
+    if (observable(value)) sube(value, v => attr(tag, name, v))
     else if (typeof value !== 'string' && name === 'style') {
       for (s in value) {
-        if (observable(v=value[s])) unsub.push(sube(v, v => tag.style.setProperty(s, v)))
+        if (observable(v=value[s])) sube(v, v => tag.style.setProperty(s, v))
         else if (match = v.match(/(.*)\W+!important\W*$/)) tag.style.setProperty(s, match[1], 'important')
         else tag.style.setProperty(s, v)
       }
@@ -129,12 +125,10 @@ function hyperscript(tag, props, ...children) {
   if (!tag.childNodes.length) tag.append(...flat(children))
   else swap(tag, tag.childNodes, flat(children))
 
-  if (subs.length) unsub.push(...subs.map((sub, i) => sube(sub, child => (
+  if (subs.length) subs.forEach((sub, i) => sube(sub, child => (
     children[i] = child,
     swap(tag, tag.childNodes, flat(children))
-  ))))
-
-  if (unsub.length) tag[Symbol.dispose] = () => unsub.map( fn => fn.call ? fn() : fn.unsubscribe() )
+  )))
 
   return tag
 }

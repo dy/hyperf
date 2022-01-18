@@ -1,6 +1,5 @@
 var n=function(t,s,r,e){var u;s[0]=0;for(var h=1;h<s.length;h++){var p=s[h++],a=s[h]?(s[0]|=p?1:2,r[s[h++]]):s[++h];3===p?e[0]=a:4===p?e[1]=Object.assign(e[1]||{},a):5===p?(e[1]=e[1]||{})[s[++h]]=a:6===p?e[1][s[++h]]+=a+"":p?(u=t.apply(a,n(t,a,r,["",null])),e.push(u),a[0]?s[0]|=2:(s[h-2]=0,s[h]=u)):e.push(a);}return e},t=new Map;function htm(s){var r=t.get(this);return r||(r=new Map,t.set(this,r)),(r=n(this,r.get(s)||(r.set(s,r=function(n){for(var t,s,r=1,e="",u="",h=[0],p=function(n){1===r&&(n||(e=e.replace(/^\s*\n\s*|\s*\n\s*$/g,"")))?h.push(0,n,e):3===r&&(n||e)?(h.push(3,n,e),r=2):2===r&&"..."===e&&n?h.push(4,n,0):2===r&&e&&!n?h.push(5,0,!0,e):r>=5&&((e||!n&&5===r)&&(h.push(r,0,e,s),r=6),n&&(h.push(r,n,0,s),r=6)),e="";},a=0;a<n.length;a++){a&&(1===r&&p(),p(a));for(var l=0;l<n[a].length;l++)t=n[a][l],1===r?"<"===t?(p(),h=[h],r=3):e+=t:4===r?"--"===e&&">"===t?(r=1,e=""):e=t+e[0]:u?t===u?u="":e+=t:'"'===t||"'"===t?u=t:">"===t?(p(),r=1):r&&("="===t?(r=5,s=e,e=""):"/"===t&&(r<5||">"===n[a][l+1])?(p(),3===r&&(h=h[0]),r=h,(h=h[0]).push(2,0,r),r=0):" "===t||"\t"===t||"\n"===t||"\r"===t?(p(),r=2):e+=t),3===r&&"!--"===e&&(r=4,h=h[0]);}return p(),h}(s)),r),arguments,[])).length>1?r:r[0]}
 
-// lil subscriby (v-less)
 Symbol.observable||=Symbol('observable');
 
 // is target observable
@@ -11,22 +10,31 @@ const observable = arg => arg && !!(
   // || arg.mutation && arg._state != null
 );
 
-var sube = (target, next, error, complete, stop) => 
-  target && (
-    target.subscribe?.( next, error, complete ) ||
-    target[Symbol.observable]?.().subscribe?.( next, error, complete ) ||
-    target.set && target.call?.(stop, next) || // observ
-    (
-      target.then?.(v => (!stop && next(v), complete?.()), error) ||
-      (async _ => {
-        try {
-          // FIXME: possible drawback: it will catch error happened in next, not only in iterator
-          for await (target of target) { if (stop) return; next(target); }
-          complete?.();
-        } catch (err) { error?.(err); }
-      })()
-    ) && (_ => stop=1)
-  );
+// cleanup subscriptions
+// ref: https://v8.dev/features/weak-references
+// FIXME: maybe there's smarter way to unsubscribe in weakref
+const registry = new FinalizationRegistry(unsub => unsub.call?.());
+
+// lil subscriby (v-less)
+var sube = (target, next, error, complete, stop, unsub) => target && (
+  unsub = target.subscribe?.( next, error, complete ) ||
+  target[Symbol.observable]?.().subscribe?.( next, error, complete ) ||
+  target.set && target.call?.(stop, next) || // observ
+  (
+    target.then?.(v => (!stop && next(v), complete?.()), error) ||
+    (async v => {
+      try {
+        // FIXME: possible drawback: it will catch error happened in next, not only in iterator
+        for await (v of target) { if (stop) return; next(v); }
+        complete?.();
+      } catch (err) { error?.(err); }
+    })()
+  ) && (_ => stop=1),
+
+  // register autocleanup
+  registry.register(target, unsub),
+  unsub
+);
 
 // inflate version of differ, ~260b
 // + no sets / maps used
@@ -85,15 +93,13 @@ const prop = (el, k, v, desc) => (
     v === true ? '' :
     typeof v === 'number' || typeof v === 'string' ? v :
     k === 'class' && Array.isArray(v) ? v.filter(Boolean).join(' ') :
-    k === 'style' && v.constructor === Object ?
-      (k=v,v=Object.values(v),Object.keys(k).map((k,i) => `${k}: ${v[i]};`).join(' ')) :
-    ''
+    k === 'style' && v.constructor === Object ? (
+      k=v, v=Object.values(v), Object.keys(k).map((k,i) => `${k}: ${v[i]};`).join(' ')
+    ) : ''
   )
 );
 
 const _static = Symbol();
-
-Symbol.dispose||=Symbol('dispose');
 
 // configure swapper
 // FIXME: make same-key morph for faster updates
@@ -183,21 +189,19 @@ function hyperscript(tag, props, ...children) {
     // component is completed - no need to post-swap children/props
     return tag
   }
-  // clean up previous observables
-  else tag[Symbol.dispose]?.();
 
   // apply props
-  let unsub = [], subs = [], i, child, name, value, s, v, match;
+  let subs = [], i, child, name, value, s, v, match;
   for (name in props) {
     value = props[name];
     // classname can contain these casted literals
     if (typeof value === 'string') value = value.replace(/\b(false|null|undefined)\b/g,'');
 
     // primitive is more probable also less expensive than observable check
-    if (observable(value)) unsub.push(sube(value, v => prop(tag, name, v)));
+    if (observable(value)) sube(value, v => prop(tag, name, v));
     else if (typeof value !== 'string' && name === 'style') {
       for (s in value) {
-        if (observable(v=value[s])) unsub.push(sube(v, v => tag.style.setProperty(s, v)));
+        if (observable(v=value[s])) sube(v, v => tag.style.setProperty(s, v));
         else if (match = v.match(/(.*)\W+!important\W*$/)) tag.style.setProperty(s, match[1], 'important');
         else tag.style.setProperty(s, v);
       }
@@ -217,12 +221,10 @@ function hyperscript(tag, props, ...children) {
   if (!tag.childNodes.length) tag.append(...flat(children));
   else swap(tag, tag.childNodes, flat(children));
 
-  if (subs.length) unsub.push(...subs.map((sub, i) => sube(sub, child => (
+  if (subs.length) subs.forEach((sub, i) => sube(sub, child => (
     children[i] = child,
     swap(tag, tag.childNodes, flat(children))
-  ))));
-
-  if (unsub.length) tag[Symbol.dispose] = () => unsub.map( fn => fn.call ? fn() : fn.unsubscribe() );
+  )));
 
   return tag
 }

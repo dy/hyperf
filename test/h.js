@@ -24,7 +24,7 @@ t('h: single attribute', async t => {
 
   a.value = (undefined)
 
-  a[Symbol.dispose](null)
+  // a[Symbol.dispose](null)
   await tick(24)
   is(el.outerHTML, `<div></div>`)
 })
@@ -46,7 +46,7 @@ t('h: single attribute on mounted node', async t => {
   is(el.outerHTML, `<div a="1"></div>`)
 
   a.value = (undefined)
-  a[Symbol.dispose]()
+  // a[Symbol.dispose]()
   await tick(24)
   is(el.outerHTML, `<div></div>`)
 })
@@ -65,7 +65,7 @@ t('h: text content', async t => {
   is(el.outerHTML, `<div>1</div>`)
 
   a.value = (undefined)
-  a[Symbol.dispose]()
+  // a[Symbol.dispose]()
   await tick(8)
   is(el.outerHTML, `<div></div>`)
 })

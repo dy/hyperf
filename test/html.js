@@ -1,8 +1,8 @@
-import t, {is, ok, not} from '../node_modules/tst/tst.js'
-import v from '../node_modules/value-ref/value-ref.min.js'
+import t, {is, ok, not} from 'tst'
+import v from 'value-ref'
 import h from '../src/index.js'
 // import h from './libs/h21.js'
-import { tick, frame, idle, time } from '../node_modules/wait-please/index.js'
+import { tick, frame, idle, time } from 'wait-please'
 import observable from './libs/observable.js'
 // import { v as iv } from 'ironjs'
 import Observable from './libs/zen-observable.js'
@@ -43,6 +43,31 @@ t('html: observable attr', t => {
 
   val[Symbol.dispose]()
   is(el.outerHTMLClean, `<div></div>`, 'disposed')
+})
+
+
+t('html: observable attr autocleanup', async t => {
+  // observable value
+  let arr=[], val = {
+    subscribe(fn){ fn(0); this.set=fn; return ()=>arr.push('end') }
+  }
+
+  let el = h`<div a=${val}></div>`
+  is(el.outerHTMLClean, `<div a="0"></div>`)
+
+  val.set(1)
+  is(el.outerHTMLClean, `<div a="1"></div>`)
+
+  val = null
+  is(arr, [])
+
+  if (globalThis.gc) {
+    await time(50)
+    globalThis.gc()
+    await time(50)
+
+    is(arr, ['end'])
+  }
 })
 
 t('html: single attribute on mounted node', async t => {
@@ -731,13 +756,13 @@ t('html: accepts rxjs directly', async t => {
   // document.body.appendChild(el)
   await frame(2)
   is(el.outerHTMLClean, `<div>42</div>`)
-  el[Symbol.dispose]()
+  // el[Symbol.dispose]()
 })
 
 t('html: subscribable-things', async t => {
   let el = document.body.appendChild(h`<div>${animationFrame()}</div>`)
   setTimeout(() => {
-    el[Symbol.dispose]()
+    // el[Symbol.dispose]()
   }, 1080)
 })
 
