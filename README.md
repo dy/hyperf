@@ -24,7 +24,8 @@ const frag = h`<x ...${{x: 1}}>1</x><y>2</y>`
 h`<${a}>${ frag }</a>` // update node
 // <a><x x="1">1</x><y>2</y></a>
 
-a.dispose() // destroy observers
+// to unsubscribe, just clean up refs to params
+text = null
 ```
 
 ### JSX
