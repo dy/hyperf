@@ -117,7 +117,7 @@ function hyperscript(tag, props, ...children) {
   for (i = 0; i < children.length; i++)
     if (child = children[i])
       // static nodes (cached by HTM) must be cloned, because h is not called for them more than once
-      if (child[_static]) (children[i] = child.cloneNode(true))
+      if (child[_static]) children[i] = child.cloneNode(true)
       else if (observable(child)) subs[i] = child, child = new Text
 
 
