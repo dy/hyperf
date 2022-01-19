@@ -49,7 +49,7 @@ t('html: observable attr', t => {
 t('html: observable attr autocleanup', async t => {
   // observable value
   let arr=[], val = {
-    subscribe(fn){ fn(0); this.set=fn; return ()=>arr.push('end') }
+    subscribe(fn){ fn(0); this.set=fn; return {unsubscribe:()=>arr.push('end')} }
   }
 
   let el = h`<div a=${val}></div>`
