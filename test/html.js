@@ -257,6 +257,12 @@ t('html: fragments', async t => {
   is(el3.textContent, 'foo')
 })
 
+t('html: templates', async t => {
+  let el = h`<template><div>1</div></template>`
+  is(el.content.innerHTML, `<div>1</div>`)
+  is(el.childNodes.length, 0)
+})
+
 t('html: reinsert self content', async t => {
   let el = document.createElement('div')
   el.innerHTML = 'a <b>c <d>e <f></f> g</d> h</b> i'
@@ -562,7 +568,7 @@ t('html: update own children', t => {
 
 t('html: [legacy] prop', async t => {
   let obj = v(({ x: 1 }))
-  let el = h`<div>${ obj.map(obj => obj.x) }</div>`
+  let el = h`<div>${ v.from(obj, obj => obj.x) }</div>`
 
   is(el.outerHTMLClean, '<div>1</div>')
 
@@ -734,7 +740,7 @@ t('html: a#b.c', async t => {
 
 t('html: dynamic data case', async t => {
   let table = document.createElement('table'), data = v([])
-  h`<${table}>${ data.map(data => data.map(item => h`<tr><td>${ item }</td></tr>`)) }</>`
+  h`<${table}>${ v.from(data, data => data.map(item => h`<tr><td>${ item }</td></tr>`)) }</>`
   is(table.innerHTML, '')
 
   console.log('---update')

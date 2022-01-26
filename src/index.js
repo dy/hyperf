@@ -55,7 +55,7 @@ export default function (statics) {
 }
 
 function hyperscript(tag, props, ...children) {
-  const {init} = this
+  let {init} = this, isTemplate
 
   if (typeof tag === 'string') {
     // hyperscript-compat
@@ -71,12 +71,13 @@ function hyperscript(tag, props, ...children) {
       }
     }
     tag = doc.createElement(tag)
+    isTemplate = tag.nodeName === 'TEMPLATE'
 
     // shortcut for faster creation, static nodes are really simple
     if (init) {
       tag[_static] = true
       for (let name in props) attr(tag, name, props[name])
-      tag.append(...flat(children))
+      ;(isTemplate ? tag.content : tag).append(...flat(children))
       return tag
     }
   }
@@ -120,9 +121,8 @@ function hyperscript(tag, props, ...children) {
       if (child[_static]) children[i] = child.cloneNode(true)
       else if (observable(child)) subs[i] = child, child = new Text
 
-
   // append shortcut
-  if (!tag.childNodes.length) tag.append(...flat(children))
+  if (!tag.childNodes.length) (isTemplate ? tag.content : tag).append(...flat(children))
   else swap(tag, tag.childNodes, flat(children))
 
   if (subs.length) subs.forEach((sub, i) => sube(sub, child => (

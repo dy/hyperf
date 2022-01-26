@@ -1,5 +1,5 @@
 import t, {is, ok, any} from '../node_modules/tst/tst.js'
-import v from '../node_modules/value-ref/value-ref.min.js'
+import v from '../node_modules/value-ref/value-ref.js'
 import h from '../src/index.js'
 // import h, { default as sh } from './libs/h21.js'
 // import h, { default as sh } from './libs/h-compact.js'
@@ -460,7 +460,7 @@ t('h: update own children', t => {
 t('h: observable prop child', async t => {
   let obj = v()
   obj.value = ({ x: 1 })
-  let el = h('div', null, obj.map(obj => obj.x))
+  let el = h('div', null, v.from(obj, obj => obj.x))
 
   is(el.outerHTML, '<div>1</div>')
 

@@ -13,13 +13,13 @@ const observable = arg => arg && !!(
 
 // cleanup subscriptions
 // ref: https://v8.dev/features/weak-references
-// FIXME: maybe there's smarter way to unsubscribe in weakref
+// FIXME: maybe there's smarter way to unsubscribe in weakref, like, wrapping target in weakref?
 const registry = new FinalizationRegistry(unsub => unsub.call?.()),
 
 // this thingy must lose target out of context to let gc hit
 unsubr = sub => sub && (() => sub.unsubscribe?.());
 
-var sube = (target, next, error, complete, stop, sub, unsub) => target && (
+var sube = (target, next, error, complete, stop, unsub) => target && (
   unsub = unsubr((target[Symbol.observable]?.() || target).subscribe?.( next, error, complete )) ||
   target.set && target.call?.(stop, next) || // observ
   (
@@ -153,7 +153,7 @@ function index (statics) {
 }
 
 function hyperscript(tag, props, ...children) {
-  const {init} = this;
+  let {init} = this, isTemplate;
 
   if (typeof tag === 'string') {
     // hyperscript-compat
@@ -169,12 +169,13 @@ function hyperscript(tag, props, ...children) {
       }
     }
     tag = doc.createElement(tag);
+    isTemplate = tag.nodeName === 'TEMPLATE';
 
     // shortcut for faster creation, static nodes are really simple
     if (init) {
       tag[_static] = true;
-      for (let name in props) prop(tag, name, props[name]);
-      tag.append(...flat(children));
+      for (let name in props) prop(tag, name, props[name])
+      ;(isTemplate ? tag.content : tag).append(...flat(children));
       return tag
     }
   }
@@ -215,12 +216,11 @@ function hyperscript(tag, props, ...children) {
   for (i = 0; i < children.length; i++)
     if (child = children[i])
       // static nodes (cached by HTM) must be cloned, because h is not called for them more than once
-      if (child[_static]) (children[i] = child.cloneNode(true));
+      if (child[_static]) children[i] = child.cloneNode(true);
       else if (observable(child)) subs[i] = child, child = new Text;
 
-
   // append shortcut
-  if (!tag.childNodes.length) tag.append(...flat(children));
+  if (!tag.childNodes.length) (isTemplate ? tag.content : tag).append(...flat(children));
   else swap(tag, tag.childNodes, flat(children));
 
   if (subs.length) subs.forEach((sub, i) => sube(sub, child => (
