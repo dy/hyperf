@@ -534,3 +534,45 @@ t.todo('h: keyed', t => {
   let [a2,b2] = h`<${ul}><li id=1>1</li><li>2</li></>`.childNodes
   is(a1, a2)
 })
+
+t('h#1: component returns observable;', async t => {
+  const Fragment = ({ children }) => children;
+  let count = v(0);
+  let promise = new Promise(ok => ok())
+
+  // // TODO: orig problem:
+  // let X = () => new Promise(ok => setTimeout(()=>ok(h(Fragment, null, "hi")), 1000));
+
+  // setInterval(() => {
+  //   count.value = Math.random() * 1000;
+  // }, 1000);
+
+  // const App = () =>  h(Fragment, null,
+  //   h(Fragment, null, "a"),
+  //   h(Fragment, null, "b"),
+  //   h(Fragment, null, "c"),
+  //   count,
+  //   h(X, null)
+  // );
+  // document.body.append( h(App, null));
+
+  // component returns observable
+  const A = () => count;
+  let a = h(A, null)
+  is(a.textContent, `0`)
+  count.value = 1
+  await tick(10);
+  is(a.textContent, `1`)
+
+  // component returns fragment
+  const B = () => h(Fragment, null, count);
+  let b = h(B, null)
+  is(b.textContent, `1`)
+  count.value = 2
+  await tick(10);
+  is(b.textContent, `2`)
+
+  // promise doesn't leak
+  let c = h(Fragment, null, promise)
+  is(c.textContent, '')
+})

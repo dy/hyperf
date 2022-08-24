@@ -26,6 +26,7 @@
   ],
   "scripts": {
     "test": "node --expose-gc -r ./test/register.cjs test/index.js",
+    "start": "serve",
     "build": "rollup src/index.js -p @rollup/plugin-node-resolve --file hyperf.js --format esm",
     "minify": "terser hyperf.js -o hyperf.min.js --module -c passes=3 -m"
   },

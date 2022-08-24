@@ -55,7 +55,7 @@ export default function (statics) {
 }
 
 function hyperscript(tag, props, ...children) {
-  let {init} = this, isTemplate
+  let {init} = this
 
   if (typeof tag === 'string') {
     // hyperscript-compat
@@ -71,13 +71,12 @@ function hyperscript(tag, props, ...children) {
       }
     }
     tag = doc.createElement(tag)
-    isTemplate = tag.nodeName === 'TEMPLATE'
 
     // shortcut for faster creation, static nodes are really simple
     if (init) {
       tag[_static] = true
       for (let name in props) attr(tag, name, props[name])
-      ;(isTemplate ? tag.content : tag).append(...flat(children))
+      ;(tag.nodeName === 'TEMPLATE' ? tag.content : tag).append(...flat(children))
       return tag
     }
   }
@@ -85,13 +84,26 @@ function hyperscript(tag, props, ...children) {
   else if (init) return
   else if (typeof tag === 'function') {
     tag = tag({children, ...props})
-    // FIXME: is there a more elegant way?
-    if (Array.isArray(tag)) {
+
+    // we unwrap single-node children
+    if (!Array.isArray(tag)) tag = [tag]
+
+    // FIXME: there's likely a room for optimizing subscription to component results, but how
+    if (tag.length > 1) {
       let frag = doc.createDocumentFragment()
-      frag.append(...tag)
-      tag = frag
+      frag.append(...tag.map((node, text) => observable(node) ? (text = new Text(), sube(node, v => text.data=v), text) : node))
+      return frag
     }
-    // component is completed - no need to post-swap children/props
+
+    [tag] = tag;
+    // observable case - just make dynamic node
+    if (observable(tag)) {
+      let node = new Text()
+      sube(tag, value => (node.data = value))
+      return node
+    }
+
+    // component is complete - no need to post-swap children/props
     return tag
   }
 
@@ -114,7 +126,7 @@ function hyperscript(tag, props, ...children) {
     else attr(tag, name, value)
   }
 
-  // detect observables
+  // detect observables in children
   for (i = 0; i < children.length; i++)
     if (child = children[i])
       // static nodes (cached by HTM) must be cloned, because h is not called for them more than once
@@ -122,7 +134,7 @@ function hyperscript(tag, props, ...children) {
       else if (observable(child)) subs[i] = child, child = new Text
 
   // append shortcut
-  if (!tag.childNodes.length) (isTemplate ? tag.content : tag).append(...flat(children))
+  if (!tag.childNodes.length) (tag.nodeName === 'TEMPLATE' ? tag.content : tag).append(...flat(children))
   else swap(tag, tag.childNodes, flat(children))
 
   if (subs.length) subs.forEach((sub, i) => sube(sub, child => (
