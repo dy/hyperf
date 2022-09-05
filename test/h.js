@@ -413,12 +413,12 @@ t('h: falsey prev attrs', t => {
 
 t('h: functional components create element', t => {
   let log = []
-  let el = h(el => {
+  let frag = h(el => {
     let e = document.createElement('a')
     log.push(e)
     return e
   })
-  is(log, [el])
+  is(log, [frag.firstChild])
 })
 
 t('h: must not morph inserted nodes', async t => {
@@ -522,12 +522,12 @@ t('h: avoid multiple templates for children', async t => {
   // console.log(h.cache)
 })
 
-t.todo('h: closing component', t => {
+t.skip('h: closing component', t => {
   let el = document.createElement('x')
   h`<${el}>1</${el}>`
 })
 
-t.todo('h: keyed', t => {
+t.skip('h: keyed', t => {
   // NOTE: delegated to strui/list
   let ul = document.createElement('ul')
   let [a1,b1] = h`<${ul}><li id=1>1</li><li>2</li></>`.childNodes
@@ -535,10 +535,10 @@ t.todo('h: keyed', t => {
   is(a1, a2)
 })
 
-t('h#1: component returns observable;', async t => {
+t.todo('h#1: component returns observable;', async t => {
   const Fragment = ({ children }) => children;
   let count = v(0);
-  let promise = new Promise(ok => ok())
+  let promise = new Promise(ok => ok());
 
   // // TODO: orig problem:
   // let X = () => new Promise(ok => setTimeout(()=>ok(h(Fragment, null, "hi")), 1000));
@@ -556,7 +556,8 @@ t('h#1: component returns observable;', async t => {
   // );
   // document.body.append( h(App, null));
 
-  // component returns observable
+  // // component returns observable
+  console.log('A')
   const A = () => count;
   let a = h(A, null)
   is(a.textContent, `0`)
@@ -565,6 +566,7 @@ t('h#1: component returns observable;', async t => {
   is(a.textContent, `1`)
 
   // component returns fragment
+  console.log('B')
   const B = () => h(Fragment, null, count);
   let b = h(B, null)
   is(b.textContent, `1`)
@@ -573,6 +575,58 @@ t('h#1: component returns observable;', async t => {
   is(b.textContent, `2`)
 
   // promise doesn't leak
+  console.log('C')
   let c = h(Fragment, null, promise)
   is(c.textContent, '')
+
+
+  // dynamic fragment
+  const D = () => h(Fragment, null, count);
+  let d = h(D, null)
+  is(d.textContent, `2`)
+  let frag = h(Fragment, null, 'a', 'b')
+  count.value = frag
+  await tick(10);
+  is(d.textContent, `ab`)
+
+  count.value = 2
+  await tick(10);
+  is(d.textContent, `2`)
+
+  count.value = frag
+  await tick(10);
+  is(d.textContent, `ab`)
+})
+
+t.todo('h#1.1: async observables resolving to DOM', async t => {
+  // orig case
+  //   const Fragment = ({ children }) => children;
+  //   const TodoItem = async ({ id }) => {
+  //     let api = await fetch(`https://jsonplaceholder.typicode.com/todos/${id}`);
+  //     let todo = await api.json();
+
+  //     return (
+  //       <li>
+  //         <span>{todo.title}</span>
+  //         <input type="checkbox" checked={todo.completed} />
+  //       </li>
+  //     );
+  //   };
+
+  //   let X = () => Promise.resolve(<div>hi</div>);
+
+  //   const App = () => (
+  //     <main>
+  //       <X />
+  //       <TodoItem id="1" />
+  //     </main>
+  //   );
+
+  //   document.body.append(<App />);
+
+  let P = () => Promise.resolve(h('b', null, 1))
+  let a = h('a', null, h(P))
+  is(a.outerHTML, `<a></a>`)
+  await tick(10)
+  is(a.outerHTML, `<a><b>1</b></a>`)
 })

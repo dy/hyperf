@@ -507,7 +507,7 @@ t('html: functional components create element', t => {
     log.push(e)
     return e
   }}/>`
-  is(log, [el])
+  is(log, el.childNodes)
 })
 
 t('html: must update text content', async t => {
