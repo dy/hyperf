@@ -43,7 +43,7 @@ h(a, a2) // render/update
 
 ## Limitation
 
-* Fragments cannot include observables ([#1](https://github.com/spectjs/hyperf/issues/1)), like `<>{ rxSubject } or { asyncIterable } or { promise }</>`. For that purpose use shallow nodes.
+* Fragments cannot include observables ([#1](https://github.com/spectjs/hyperf/issues/1)), like `<>{ rxSubject } or { asyncIterable } or { promise }</>`. For that purpose use shallow nodes `<div>{ rxSubject } or { asyncIterable } or { promise }</div>`
 
 ## Refs
 
