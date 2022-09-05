@@ -49,4 +49,6 @@ h(a, a2) // render/update
 
 [lit-html](https://ghub.io/lit-html), [htm](https://ghub.io/htm), [htl](https://ghub.io/htl), [hyperscript](https://ghub.io/hyperscript), [incremental-dom](https://ghub.io/incremental-dom), [snabbdom](https://ghub.io/snabbdom), [nanomorph](https://ghub.io/nanomorph), [uhtml](https://ghub.io/uhtml) and others.
 
+Also: [document-persistent-fragment](https://www.npmjs.com/package/document-persistent-fragment).
+
 <p align="center">ॐ</p>
