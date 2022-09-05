@@ -101,14 +101,14 @@ const prop = (el, k, v, desc) => (
   )
 );
 
-const _static = Symbol();
+const _static = Symbol(), _items = Symbol();
 
 // configure swapper
 // FIXME: make same-key morph for faster updates
 // FIXME: modifying prev key can also make it faster
 // SOURCE: src/diff-inflate.js
 // FIXME: avoid insert, replace: do that before
-swap.same = (a, b) => a === b || a?.data != null && a?.data === b?.data;
+swap.same = (a, b) => a === b || a?.data != null && (a?.data === b?.data);
 swap.insert = (a, b, parent) => parent.insertBefore(b?.nodeType ? b : new Text(b), a);
 swap.replace = (from, to, parent) => to?.nodeType ? parent.replaceChild(to, from) :
     from.nodeType === TEXT ? from.data = to : from.replaceWith(to);
@@ -119,18 +119,19 @@ const TEXT = 3;
 const cache = new WeakSet,
       ctx = {init:false},
       doc=document,
-      h = hyperscript.bind(ctx),
-      flat = (children) => {
-        let out = [], i = 0, item;
-        for (; i < children.length;)
-          if ((item = children[i++]) != null)
-            // .values is common for NodeList / Array indicator (.forEach is used by rxjs, iterator is by string)
-            if (item.values) for (item of item) out.push(item);
-            else if (!observable(item)) out.push(item);
-        return out
-      };
+      h = hyperscript.bind(ctx);
 
-function index (statics) {
+function flat (children) {
+  let out = [], i = 0, item;
+  for (; i < children.length;)
+    if ((item = children[i++]) != null)
+      // .values is common for NodeList / Array indicator (.forEach is used by rxjs, iterator is by string)
+      if (item.values) for (item of item) out.push(item);
+      else if (!observable(item)) out.push(item);
+  return out
+}
+
+function html (statics) {
   if (!Array.isArray(statics)) return h(...arguments)
 
   // HTM caches nodes that don't have attr or children fields
@@ -186,23 +187,7 @@ function hyperscript(tag, props, ...children) {
     // we unwrap single-node children
     if (!Array.isArray(tag)) tag = [tag];
 
-    // FIXME: there's likely a room for optimizing subscription to component results, but how
-    if (tag.length > 1) {
-      let frag = doc.createDocumentFragment();
-      frag.append(...tag.map((node, text) => observable(node) ? (text = new Text(), sube(node, v => text.data=v), text) : node));
-      return frag
-    }
-
-    [tag] = tag;
-    // observable case - just make dynamic node
-    if (observable(tag)) {
-      let node = new Text();
-      sube(tag, value => (node.data = value));
-      return node
-    }
-
-    // component is complete - no need to post-swap children/props
-    return tag
+    return h(doc.createDocumentFragment(), null, ...tag)
   }
 
   // apply props
@@ -237,10 +222,12 @@ function hyperscript(tag, props, ...children) {
 
   if (subs.length) subs.forEach((sub, i) => sube(sub, child => (
     children[i] = child,
+
+    // NOTE: in some cases fragment is a child of another fragment, we ignore that case
     swap(tag, tag.childNodes, flat(children))
   )));
 
   return tag
 }
 
-export { _static, index as default };
+export { _items, _static, html as default };
