@@ -1,6 +1,6 @@
 # hyperf [![test](https://github.com/spectjs/hyperf/actions/workflows/test.yml/badge.svg)](https://github.com/spectjs/hyperf/actions/workflows/test.yml) [![npm version](https://img.shields.io/npm/v/hyperf)](http://npmjs.org/hyperf)
 
-> Hypertext fragments builder with reactivity. (Printf for HTM). Ex `spect/h`.
+> Hypertext fragments builder with reactivity. (Printf for HTM).
 
 #### _``const el = h`...content` ``_
 
