@@ -1,6 +1,6 @@
 # hyperf [![test](https://github.com/spectjs/hyperf/actions/workflows/test.yml/badge.svg)](https://github.com/spectjs/hyperf/actions/workflows/test.yml) [![npm version](https://img.shields.io/npm/v/hyperf)](http://npmjs.org/hyperf)
 
-> Easy document fragments builder with reactivity support
+> Elements / document fragments builder with reactivity support
 
 #### _``const el = h`<div foo=${foo}>${bar}</div>` ``_
 
