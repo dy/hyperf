@@ -1,4 +1,5 @@
-# hyperf [![test](https://github.com/spectjs/hyperf/actions/workflows/test.yml/badge.svg)](https://github.com/spectjs/hyperf/actions/workflows/test.yml) [![npm version](https://img.shields.io/npm/v/hyperf)](http://npmjs.org/hyperf)
+# hyperf [![test](https://github.com/spectjs/hyperf/actions/workflows/test.yml/badge.svg)](https://github.com/spectjs/hyperf/actions/workflows/test.yml) [![npm version](https://img.shields.io/npm/v/hyperf)](http://npmjs.org/hyperf) [![size](https://img.shields.io/bundlephobia/minzip/hyperf?label=size)](https://bundlephobia.com/result?p=hyperf)
+
 
 > Elements / document fragments builder with reactivity support. It's fast & tiny.
 
