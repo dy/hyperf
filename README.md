@@ -1,17 +1,17 @@
 # hyperf [![test](https://github.com/spectjs/hyperf/actions/workflows/test.yml/badge.svg)](https://github.com/spectjs/hyperf/actions/workflows/test.yml) [![npm version](https://img.shields.io/npm/v/hyperf)](http://npmjs.org/hyperf)
 
-> Hypertext fragments builder with reactivity. (Printf for HTM).
+> Easy document fragments builder with reactivity support
 
-#### _``const el = h`...content` ``_
+#### _``const el = h`<div foo=${foo}>${bar}</div>` ``_
 
-Create hypertext fragment via tagged literal with [htm](https://github.com/htm) syntax support.<br/>
-Allows reactive fields: _Promise_, _AsyncIterable_, _Observable_ etc., see [sube](https://github.com/spectjs/sube).
+Create an element (or document fragment) via tagged literal with [htm](https://github.com/htm) syntax support.<br/>
+Fields support reactive values, like _Promise_, _AsyncIterable_, _Observable_, Signal etc., see [sube](https://github.com/spectjs/sube).
 
 ```js
 import h from './hyperf.js'
-import v from './value-ref.js'
+import { signal } from '@preact/signals'
 
-const text = v('foo') // reactive value
+const text = signal('foo')
 
 const a = h`<a>${ text }</a>`
 // <a>foo</a>
@@ -30,7 +30,7 @@ text = null
 
 ### JSX
 
-To use _hyperf_ as JSX, just provide directive for your builder (webpack or esbuild):
+To use enable JSX just provide a directive for your builder (webpack or esbuild):
 
 ```jsx
 import h from 'hyperf' /* jsx h */
