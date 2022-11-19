@@ -28,7 +28,7 @@ a.append(frag)
 text = null // cleanup refs/observables
 ```
 
-### _``const el = h(tag, attrs, ...content) ``_
+#### _``const el = h(tag, attrs, ...content) ``_
 
 [Hyperscript](https://github.com/hyperhype/hyperscript) syntax support. 
 
