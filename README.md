@@ -1,12 +1,12 @@
 # hyperf [![test](https://github.com/spectjs/hyperf/actions/workflows/test.yml/badge.svg)](https://github.com/spectjs/hyperf/actions/workflows/test.yml) [![npm version](https://img.shields.io/npm/v/hyperf)](http://npmjs.org/hyperf) [![size](https://img.shields.io/bundlephobia/minzip/hyperf?label=size)](https://bundlephobia.com/result?p=hyperf)
 
 
-> Elements / document fragments builder with reactivity support. It's fast & tiny.
+> Fast & tiny elements / fragments builder with reactivity support.
 
 #### _``const el = h`<div foo=${foo}>${bar}</div>` ``_
 
 Create an element (or document fragment) via tagged literal with [htm](https://github.com/htm) syntax support.<br/>
-Fields support reactive values, like _Promise_, _AsyncIterable_, _Observable_, Signal etc., see [sube](https://github.com/spectjs/sube).
+Fields support reactive values, like _Promise_, _AsyncIterable_, _Observable_, _Signal_ etc., see [sube](https://github.com/spectjs/sube).
 
 ```js
 import h from './hyperf.js'
@@ -22,29 +22,30 @@ text.value = 'bar'
 
 const frag = h`<x ...${{x: 1}}>1</x><y>2</y>`
 
-h`<${a}>${ frag }</a>` // update node
+a.append(frag)
 // <a><x x="1">1</x><y>2</y></a>
 
-// to unsubscribe, just clean up refs to params
-text = null
+text = null // cleanup refs/observables
 ```
 
-### JSX
+### _``const el = h(tag, attrs, ...content) ``_
 
-To use enable JSX just provide a directive for your builder (webpack or esbuild):
+[Hyperscript](https://github.com/hyperhype/hyperscript) syntax support. 
+
+To enable JSX just provide a directive for your builder (webpack or esbuild):
 
 ```jsx
 import h from 'hyperf' /* jsx h */
 
 const a1 = <a>...</a>
-const a2 = <a>{ rxSubject } or { asyncIterable } or { promise }</a>
+const a2 = <a>Content: { value }</a>
 
-h(a, a2) // render/update
+document.querySelector('#container').append(a1, a2)
 ```
 
 ## Limitation
 
-* Fragments cannot include observables ([#1](https://github.com/spectjs/hyperf/issues/1)), like `<>{ rxSubject } or { asyncIterable } or { promise }</>`. For that purpose use shallow nodes `<div>{ rxSubject } or { asyncIterable } or { promise }</div>`
+* Top-level fragments cannot include observables ([#1](https://github.com/spectjs/hyperf/issues/1)), like `<>{ rxSubject } or { asyncIterable } or { promise }</>`. For that purpose use wrapper node `<div>{ rxSubject } or { asyncIterable } or { promise }</div>`
 
 ## Refs
 
