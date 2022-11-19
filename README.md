@@ -30,9 +30,7 @@ text = null // cleanup refs/observables
 
 #### _``const el = h(tag, attrs, ...content) ``_
 
-[Hyperscript](https://github.com/hyperhype/hyperscript) syntax support. 
-
-To enable JSX just provide a directive for your builder (webpack or esbuild):
+[Hyperscript](https://github.com/hyperhype/hyperscript) syntax support. To enable JSX just provide a directive for your builder (webpack or esbuild):
 
 ```jsx
 import h from 'hyperf' /* jsx h */
