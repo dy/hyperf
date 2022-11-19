@@ -43,9 +43,10 @@ const a2 = <a>Content: { value }</a>
 document.querySelector('#container').append(a1, a2)
 ```
 
-## Limitation
+## Limitations
 
-* Top-level fragments cannot include observables ([#1](https://github.com/spectjs/hyperf/issues/1)), like `<>{ rxSubject } or { asyncIterable } or { promise }</>`. For that purpose use wrapper node `<div>{ rxSubject } or { asyncIterable } or { promise }</div>`
+* Top-level fragments cannot include observables ([#1](https://github.com/spectjs/hyperf/issues/1)), like `<>{ observableOrSignal }</>`. For that purpose use wrapper node `<div>{ observableOrSignal }</div>`
+* Fragments cannot be children of fragments ([#1](https://github.com/dy/hyperf/issues/1#issuecomment-1239609944)), like `<><>Subfragment</></>`.
 
 ## Refs
 
