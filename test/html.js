@@ -250,8 +250,11 @@ t('html: fragments', async t => {
   let el = h`<foo/><bar/>`
   is(el.outerHTMLClean, `<><foo></foo><bar></bar></>`)
 
-  // let el2 = h`<>foo</>`
-  // is(el2.textContent, 'foo')
+  let foo = v('foo')
+  let el2 = h`<>${foo}</>`
+  is(el2.textContent, 'foo')
+  foo.value = 'bar'
+  is(el2.textContent, 'bar')
 
   let el3 = h`foo`
   is(el3.textContent, 'foo')

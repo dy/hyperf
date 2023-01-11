@@ -41,11 +41,6 @@ const a2 = <a>Content: { value }</a>
 document.querySelector('#container').append(a1, a2)
 ```
 
-## Limitations
-
-* Top-level fragments cannot include observables ([#1](https://github.com/spectjs/hyperf/issues/1)), like `<>{ observableOrSignal }</>`. For that purpose use wrapper node `<div>{ observableOrSignal }</div>`
-* Fragments cannot be children of fragments ([#1](https://github.com/dy/hyperf/issues/1#issuecomment-1239609944)), like `<><>Subfragment</></>`.
-
 ## Refs
 
 [lit-html](https://ghub.io/lit-html), [htm](https://ghub.io/htm), [htl](https://ghub.io/htl), [hyperscript](https://ghub.io/hyperscript), [incremental-dom](https://ghub.io/incremental-dom), [snabbdom](https://ghub.io/snabbdom), [nanomorph](https://ghub.io/nanomorph), [uhtml](https://ghub.io/uhtml), [uele](https://github.com/kethan/uele), [bruh](https://github.com/Technical-Source/bruh), [document-persistent-fragment](https://www.npmjs.com/package/document-persistent-fragment) and others.

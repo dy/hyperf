@@ -71,7 +71,7 @@ function hyperscript(tag, props, ...children) {
         if (cls.length) props.class = cls
       }
     }
-    tag = doc.createElement(tag)
+    tag = tag ? doc.createElement(tag) : doc.createDocumentFragment()
 
     // shortcut for faster creation, static nodes are really simple
     if (init) {
