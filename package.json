@@ -1,6 +1,6 @@
 {
   "name": "hyperf",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Hypertext fragments with reactivity",
   "main": "src/index.js",
   "module": "src/index.js",
