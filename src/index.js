@@ -1,4 +1,4 @@
-import htm from 'htm'
+import htm from 'xhtm'
 import sube, { observable } from 'sube'
 import swap from 'swapdom'
 import { prop as attr } from 'element-props'

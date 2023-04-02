@@ -5,7 +5,7 @@
 
 #### _``const el = h`<div foo=${foo}>${bar}</div>` ``_
 
-Create an element (or document fragment) via tagged literal with [htm](https://github.com/htm) syntax support.<br/>
+Create an element (or document fragment) via tagged literal (html syntax support via [xhtm](https://github.com/dy/xhtm)).<br/>
 Fields support reactive values, like _Promise_, _AsyncIterable_, _Observable_, _Signal_ etc., see [sube](https://github.com/spectjs/sube).
 
 ```js

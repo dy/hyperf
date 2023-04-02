@@ -1,4 +1,144 @@
-var n=function(t,s,r,e){var u;s[0]=0;for(var h=1;h<s.length;h++){var p=s[h++],a=s[h]?(s[0]|=p?1:2,r[s[h++]]):s[++h];3===p?e[0]=a:4===p?e[1]=Object.assign(e[1]||{},a):5===p?(e[1]=e[1]||{})[s[++h]]=a:6===p?e[1][s[++h]]+=a+"":p?(u=t.apply(a,n(t,a,r,["",null])),e.push(u),a[0]?s[0]|=2:(s[h-2]=0,s[h]=u)):e.push(a);}return e},t=new Map;function htm(s){var r=t.get(this);return r||(r=new Map,t.set(this,r)),(r=n(this,r.get(s)||(r.set(s,r=function(n){for(var t,s,r=1,e="",u="",h=[0],p=function(n){1===r&&(n||(e=e.replace(/^\s*\n\s*|\s*\n\s*$/g,"")))?h.push(0,n,e):3===r&&(n||e)?(h.push(3,n,e),r=2):2===r&&"..."===e&&n?h.push(4,n,0):2===r&&e&&!n?h.push(5,0,!0,e):r>=5&&((e||!n&&5===r)&&(h.push(r,0,e,s),r=6),n&&(h.push(r,n,0,s),r=6)),e="";},a=0;a<n.length;a++){a&&(1===r&&p(),p(a));for(var l=0;l<n[a].length;l++)t=n[a][l],1===r?"<"===t?(p(),h=[h],r=3):e+=t:4===r?"--"===e&&">"===t?(r=1,e=""):e=t+e[0]:u?t===u?u="":e+=t:'"'===t||"'"===t?u=t:">"===t?(p(),r=1):r&&("="===t?(r=5,s=e,e=""):"/"===t&&(r<5||">"===n[a][l+1])?(p(),3===r&&(h=h[0]),r=h,(h=h[0]).push(2,0,r),r=0):" "===t||"\t"===t||"\n"===t||"\r"===t?(p(),r=2):e+=t),3===r&&"!--"===e&&(r=4,h=h[0]);}return p(),h}(s)),r),arguments,[])).length>1?r:r[0]}
+const FIELD = '\ue000', QUOTES = '\ue001';
+
+function htm (statics) {
+  let h = this, prev = 0, current = [null], field = 0, args, name, value, quotes = [], quote = 0, last, level = 0, pre = false;
+
+  const evaluate = (str, parts = [], raw) => {
+    let i = 0;
+    str = (!raw && str === QUOTES ?
+      quotes[quote++].slice(1,-1) :
+      str.replace(/\ue001/g, m => quotes[quote++]));
+
+    if (!str) return str
+    str.replace(/\ue000/g, (match, idx) => {
+      if (idx) parts.push(str.slice(i, idx));
+      i = idx + 1;
+      return parts.push(arguments[++field])
+    });
+    if (i < str.length) parts.push(str.slice(i));
+    return parts.length > 1 ? parts : parts[0]
+  };
+
+  // close level
+  const up = () => {
+    // console.log('-level', current);
+    [current, last, ...args] = current;
+    current.push(h(last, ...args));
+    if (pre === level--) pre = false; // reset <pre>
+  };
+
+  let str = statics
+    .join(FIELD)
+    .replace(/<!--[^]*?-->/g, '')
+    .replace(/<!\[CDATA\[[^]*\]\]>/g, '')
+    .replace(/('|")[^\1]*?\1/g, match => (quotes.push(match), QUOTES));
+
+    // ...>text<... sequence
+  str.replace(/(?:^|>)((?:[^<]|<[^\w\ue000\/?!>])*)(?:$|<)/g, (match, text, idx, str) => {
+    let tag, close;
+
+    if (idx) {
+      str.slice(prev, idx)
+        // <abc/> → <abc />
+        .replace(/(\S)\/$/, '$1 /')
+        .split(/\s+/)
+        .map((part, i) => {
+          // </tag>, </> .../>
+          if (part[0] === '/') {
+            part = part.slice(1);
+            // ignore duplicate empty closers </input>
+            if (EMPTY[part]) return
+            // ignore pairing self-closing tags
+            close = tag || part || 1;
+            // skip </input>
+          }
+          // <tag
+          else if (!i) {
+            tag = evaluate(part);
+            // <p>abc<p>def, <tr><td>x<tr>
+            if (typeof tag === 'string') { tag = tag.toLowerCase(); while (CLOSE[current[1]+tag]) up(); }
+            current = [current, tag, null];
+            level++;
+            if (!pre && PRE[tag]) pre = level;
+            // console.log('+level', tag)
+            if (EMPTY[tag]) close = tag;
+          }
+          // attr=...
+          else if (part) {
+            let props = current[2] || (current[2] = {});
+            if (part.slice(0, 3) === '...') {
+              Object.assign(props, arguments[++field]);
+            }
+            else {
+              [name, value] = part.split('=');
+              Array.isArray(value = props[evaluate(name)] = value ? evaluate(value) : true) &&
+              // if prop value is array - make sure it serializes as string without csv
+              (value.toString = value.join.bind(value, ''));
+            }
+          }
+        });
+    }
+
+    if (close) {
+      if (!current[0]) err(`Wrong close tag \`${close}\``);
+      up();
+      // if last child is optionally closable - close it too
+      while (last !== close && CLOSE[last]) up();
+    }
+    prev = idx + match.length;
+
+    // fix text indentation
+    if (!pre) text = text.replace(/\s*\n\s*/g,'').replace(/\s+/g, ' ');
+
+    if (text) evaluate((last = 0, text), current, true);
+  });
+
+  if (current[0] && CLOSE[current[1]]) up();
+
+  if (level) err(`Unclosed \`${current[1]}\`.`);
+
+  return current.length < 3 ? current[1] : (current.shift(), current)
+}
+
+const err = (msg) => { throw SyntaxError(msg) };
+
+// self-closing elements
+const EMPTY = htm.empty = {};
+
+// optional closing elements
+const CLOSE = htm.close = {};
+
+// preformatted text elements
+const PRE = htm.pre = {};
+
+'area base br col command embed hr img input keygen link meta param source track wbr ! !doctype ? ?xml'.split(' ').map(v => htm.empty[v] = true);
+
+// https://html.spec.whatwg.org/multipage/syntax.html#optional-tags
+// closed by the corresponding tag or end of parent content
+let close = {
+  'li': '',
+  'dt': 'dd',
+  'dd': 'dt',
+  'p': 'address article aside blockquote details div dl fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 header hgroup hr main menu nav ol pre section table',
+  'rt': 'rp',
+  'rp': 'rt',
+  'optgroup': '',
+  'option': 'optgroup',
+  'caption': 'tbody thead tfoot tr colgroup',
+  'colgroup': 'thead tbody tfoot tr caption',
+  'thead': 'tbody tfoot caption',
+  'tbody': 'tfoot caption',
+  'tfoot': 'caption',
+  'tr': 'tbody tfoot',
+  'td': 'th tr',
+  'th': 'td tr tbody',
+};
+for (let tag in close) {
+  for (let closer of [...close[tag].split(' '), tag])
+    htm.close[tag] = htm.close[tag + closer] = true;
+}
+
+'pre textarea'.split(' ').map(v => htm.pre[v] = true);
 
 // lil subscriby (v-less)
 Symbol.observable||=Symbol('observable');
@@ -84,22 +224,31 @@ swap.insert = (a,b, parent) => parent.insertBefore(b, a);
 swap.remove = (a, parent) => parent.removeChild(a);
 
 // auto-parse pkg in 2 lines (no object/array detection)
-const prop = (el, k, v, desc) => (
-  k = k.slice(0,2)==='on' ? k.toLowerCase() : k, // onClick → onclick
-  // avoid readonly props https://jsperf.com/element-own-props-set/1
-  el[k] !== v && (
-    !(k in el.constructor.prototype) || !(desc = Object.getOwnPropertyDescriptor(el.constructor.prototype, k)) || desc.set
-  ) && (el[k] = v),
-  v === false || v == null ? el.removeAttribute(k) :
-  typeof v !== 'function' && el.setAttribute(k,
+const prop = (el, k, v) => {
+  // onClick → onclick, someProp -> some-prop
+  if (k.startsWith('on')) k = k.toLowerCase();
+
+  if (el[k] !== v) {
+    // avoid readonly props https://jsperf.com/element-own-props-set/1
+    // ignoring that: it's too heavy, same time it's fine to throw error for users to avoid setting form
+    // let desc; if (!(k in el.constructor.prototype) || !(desc = Object.getOwnPropertyDescriptor(el.constructor.prototype, k)) || desc.set)
+    el[k] = v;
+  }
+
+  if (v == null || v === false) el.removeAttribute(k);
+  else if (typeof v !== 'function') el.setAttribute(dashcase(k),
     v === true ? '' :
-    typeof v === 'number' || typeof v === 'string' ? v :
-    k === 'class' && Array.isArray(v) ? v.filter(Boolean).join(' ') :
-    k === 'style' && v.constructor === Object ? (
-      k=v, v=Object.values(v), Object.keys(k).map((k,i) => `${k}: ${v[i]};`).join(' ')
-    ) : ''
-  )
-);
+    (typeof v === 'number' || typeof v === 'string') ? v :
+    (k === 'class') ? (Array.isArray(v) ? v.map(v=>v?.trim()) : Object.entries(v).map(([k,v])=>v?k:'')).filter(Boolean).join(' ') :
+    (k === 'style') ? Object.entries(v).map(([k,v]) => `${k}: ${v}`).join(';') : v.toString?.()||''
+  );
+};
+
+document.createElement('div');
+
+function dashcase(str) {
+	return str.replace(/[A-Z\u00C0-\u00D6\u00D8-\u00DE]/g, (match) => '-' + match.toLowerCase());
+}
 
 const _static = Symbol(), _items = Symbol();
 

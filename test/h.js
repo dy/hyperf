@@ -502,7 +502,7 @@ t('h: array component', t => {
 })
 
 t('h: object props preserve internal observables, only high-levels are handled', async t => {
-  let props = {x: v(0), y: v({x: v(1)})}
+  let props = {x: v(0), y: v({x: v(1),toString(){}})}
   let el = h('x', props)
   any(el.outerHTML, [`<x x="0"></x>`,`<x x="0" y=""></x>`])
   is(el.y, props.y.value)

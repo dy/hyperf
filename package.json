@@ -28,7 +28,7 @@
     "test": "node --expose-gc -r ./test/register.cjs test/index.js",
     "start": "serve",
     "build": "rollup src/index.js -p @rollup/plugin-node-resolve --file hyperf.js --format esm",
-    "minify": "terser hyperf.js -o hyperf.min.js --module -c passes=3 -m"
+    "min": "terser hyperf.js -o hyperf.min.js --module -c passes=3 -m"
   },
   "files": [
     "src",
@@ -46,10 +46,10 @@
   },
   "homepage": "https://github.com/spectjs/hyperf#readme",
   "dependencies": {
-    "element-props": "^2.0.4",
-    "htm": "^3.1.0",
+    "element-props": "^2.5.1",
     "sube": "^2.2.1",
-    "swapdom": "^1.1.1"
+    "swapdom": "^1.1.1",
+    "xhtm": "^1.6.3"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^13.1.3",
