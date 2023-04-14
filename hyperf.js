@@ -351,10 +351,11 @@ function hyperscript(tag, props, ...children) {
 
   // apply props
   let subs = [], i, child, name, value, s, v, match;
+
   for (name in props) {
     value = props[name];
     // classname can contain these casted literals
-    if (typeof value === 'string') value = value.replace(/\b(false|null|undefined)\b/g,'');
+    if (typeof value === 'string' && name.startsWith('class')) value = value.replace(/\b(false|null|undefined)\b/g,'');
 
     // primitive is more probable also less expensive than observable check
     if (observable(value)) sube(value, v => prop(tag, name, v));
