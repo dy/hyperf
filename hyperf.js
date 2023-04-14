@@ -236,15 +236,25 @@ const prop = (el, k, v) => {
   }
 
   if (v == null || v === false) el.removeAttribute(k);
-  else if (typeof v !== 'function') el.setAttribute(dashcase(k),
-    v === true ? '' :
+  else if (typeof v !== 'function') {
+    v = v === true ? '' :
     (typeof v === 'number' || typeof v === 'string') ? v :
     (k === 'class') ? (Array.isArray(v) ? v.map(v=>v?.trim()) : Object.entries(v).map(([k,v])=>v?k:'')).filter(Boolean).join(' ') :
-    (k === 'style') ? Object.entries(v).map(([k,v]) => `${k}: ${v}`).join(';') : v.toString?.()||''
-  );
+    (k === 'style') ? Object.entries(v).map(([k,v]) => `${k}: ${v}`).join(';') : v.toString?.()||'';
+
+    // workaround to set @-attributes
+    if (k[0]==='@') {
+      tmp.innerHTML=`<x ${dashcase(k)}/>`;
+      let attr = tmp.firstChild.attributes[0];
+      tmp.firstChild.removeAttributeNode(attr);
+      attr.value = v;
+      el.setAttributeNode(attr);
+    }
+    else el.setAttribute(dashcase(k), v);
+  }
 };
 
-document.createElement('div');
+const tmp = document.createElement('div');
 
 function dashcase(str) {
 	return str.replace(/[A-Z\u00C0-\u00D6\u00D8-\u00DE]/g, (match) => '-' + match.toLowerCase());

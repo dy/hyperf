@@ -884,3 +884,8 @@ t('html: set template fields', async t => {
   is(el.attributes.x.value, "{{x}}")
   is(el.attributes.onclick.value, "{{ inc() }}")
 })
+
+t('html: @-attributes', async t => {
+  let el = h`<div @x=1></div>`
+  is(el.attributes['@x'].value, "1")
+})
