@@ -1,4 +1,4 @@
-import t, {is, ok, any} from '../node_modules/tst/tst.js'
+import t, { is, ok, any } from '../node_modules/tst/tst.js'
 import v from '../node_modules/value-ref/value-ref.js'
 import h from '../src/index.js'
 // import h, { default as sh } from './libs/h21.js'
@@ -33,7 +33,7 @@ t('h: single attribute on mounted node', async t => {
   const a = v(0)
   let div = document.createElement('div')
 
-  let el = h(div, {a})
+  let el = h(div, { a })
 
   is(el, div)
   is(el.outerHTML, `<div a="0"></div>`)
@@ -54,7 +54,7 @@ t('h: single attribute on mounted node', async t => {
 t('h: text content', async t => {
   const a = v(0)
 
-  let el = h('div', { }, a)
+  let el = h('div', {}, a)
 
   is(el.outerHTML, `<div>0</div>`)
   await tick(8)
@@ -150,21 +150,21 @@ t('h: mount to another element', async t => {
 
 t('h: render new children to mounted element', async t => {
   let a = document.createElement('a')
-  let el = h(a, null, 'foo ', h('bar', null, h('baz', {class: 'qux'})))
+  let el = h(a, null, 'foo ', h('bar', null, h('baz', { class: 'qux' })))
   is(el.outerHTML, `<a>foo <bar><baz class="qux"></baz></bar></a>`)
 })
 
 t('h: simple hydrate', async t => {
   let a = document.createElement('a')
   a.innerHTML = 'foo '
-  let el = h(a, null, 'foo ', h('bar', null, h('baz', {class:'qux'})))
+  let el = h(a, null, 'foo ', h('bar', null, h('baz', { class: 'qux' })))
   is(el.outerHTML, `<a>foo <bar><baz class="qux"></baz></bar></a>`)
 })
 
 t('h: function renders external component', async t => {
   let el = h('a', null, 'foo ', h(bar))
 
-  function bar () {
+  function bar() {
     return [h('bar'), h('baz')]
   }
   is(el.outerHTML, `<a>foo <bar></bar><baz></baz></a>`)
@@ -189,7 +189,7 @@ t('h: rerendering with props: must persist', async t => {
   h(el, null, h('div'), h('x'))
   // is(el.firstChild, div)
   is(el.childNodes.length, 2)
-  document.body.appendChild(h(el, null, h('div', {class:'foo', items:[]}), h('x')))
+  document.body.appendChild(h(el, null, h('div', { class: 'foo', items: [] }), h('x')))
   // is(el.firstChild, div)
   is(el.childNodes.length, 2)
   is(el.firstChild.className, 'foo')
@@ -197,7 +197,7 @@ t('h: rerendering with props: must persist', async t => {
 })
 
 t('h: should not lose attributes', async t => {
-  let a = h('tr', {colspan:2})
+  let a = h('tr', { colspan: 2 })
   is(a.getAttribute('colspan'), "2")
 })
 
@@ -236,7 +236,7 @@ t('h: wrapping', async t => {
   let foo = root.firstChild
   foo.x = 1
 
-  let wrapped = h('div', null, h(foo, {class:'foo'}, h('bar')))
+  let wrapped = h('div', null, h(foo, { class: 'foo' }, h('bar')))
 
   is(wrapped.outerHTML, '<div><foo class="foo"><bar></bar></foo></div>')
   is(wrapped.firstChild, foo)
@@ -249,7 +249,7 @@ t('h: wrapping with children', async t => {
   let foo = root.firstChild
   foo.x = 1
 
-  let wrapped = h('div', null, h(foo, {class:'foo'}, ...foo.childNodes))
+  let wrapped = h('div', null, h(foo, { class: 'foo' }, ...foo.childNodes))
 
   is(wrapped.outerHTML, '<div><foo class="foo"><bar></bar><baz></baz></foo></div>')
   is(wrapped.firstChild, foo)
@@ -262,7 +262,7 @@ t('h: input case', async t => {
 })
 
 t('h: select case', async t => {
-  const select = h('select', null, ' ', h('option', {value:'a'}), ' ')
+  const select = h('select', null, ' ', h('option', { value: 'a' }), ' ')
   let w = h(document.createDocumentFragment(), null, ' ', select, ' ')
   await tick(8)
   is(w.outerHTML, `<> <select> <option value="a"></option> </select> </>`)
@@ -296,14 +296,14 @@ t('h: render to fragment', async t => {
 t('h: observable', async t => {
   let v = observable(1)
 
-  let el = h('div', {x: 1}, v)
+  let el = h('div', { x: 1 }, v)
 
   await tick(8)
   is(el.outerHTML, `<div x="1">1</div>`)
 })
 
 t.skip('h: generator', async t => {
-  let el = html`<div>${ function* ({}) {
+  let el = html`<div>${function* ({ }) {
     yield 1
     yield 2
   }}</div>`
@@ -331,7 +331,7 @@ t('h: async generator', async t => {
 
 t('h: put data directly to props', async t => {
   let x = {}
-  let el = h('div', {x})
+  let el = h('div', { x })
   is(el.x, x)
 })
 
@@ -370,7 +370,7 @@ t('h: preserve rendering target classes/ids/attribs', t => {
   el.id = 'x'
   el.x = '1'
 
-  h(el, {id: 'y', class: 'x z w', w: 2})
+  h(el, { id: 'y', class: 'x z w', w: 2 })
 
   is(el.outerHTML, `<div x="1" class="x z w" id="y" w="2"></div>`)
   is(el.x, '1')
@@ -380,15 +380,15 @@ t('h: preserve rendering target classes/ids/attribs', t => {
 t('h: does not duplicate classes for container', t => {
   let el = document.createElement('div')
   el.classList.add('x')
-  h(el, {class: 'x'})
+  h(el, { class: 'x' })
   is(el.outerHTML, '<div class="x"></div>')
 })
 
 t('h: component props', async t => {
   let log = []
-  let el = h(C, {id: 'x', class:'y z'})
+  let el = h(C, { id: 'x', class: 'y z' })
 
-  function C (props) {
+  function C(props) {
     log.push(props.id, props.class)
   }
 
@@ -398,16 +398,16 @@ t('h: component props', async t => {
 t.skip('h: observable in class', t => {
   // NOTE: class terms require group observable - too comples for single use-case
   let bar = v('')
-  let el = h('div', {class: [false, null, undefined, 'foo', bar]})
+  let el = h('div', { class: [false, null, undefined, 'foo', bar] })
   is(el.outerHTML, `<div class="foo "></div>`)
   bar('bar')
   is(el.outerHTML, `<div class="foo bar"></div>`)
 })
 
 t('h: falsey prev attrs', t => {
-  let el = h(`div`, { hidden:true })
+  let el = h(`div`, { hidden: true })
   is(el.hidden, true)
-  h(el, { hidden:false })
+  h(el, { hidden: false })
   is(el.hidden, false)
 })
 
@@ -418,7 +418,8 @@ t('h: functional components create element', t => {
     log.push(e)
     return e
   })
-  is(log, [frag.firstChild])
+  console.log(frag)
+  is(frag, log[0])
 })
 
 t('h: must not morph inserted nodes', async t => {
@@ -479,7 +480,7 @@ t('h: hydrate by id with existing content', t => {
   let el = document.createElement('div')
   el.innerHTML = '<a></a><b id="x"><x></x></b>'
 
-  let el2 = h(el, null, h('b', {id: 'x'}))
+  let el2 = h(el, null, h('b', { id: 'x' }))
   is(el2, el)
   is(el2.outerHTML, `<div><b id="x"></b></div>`)
 })
@@ -502,9 +503,9 @@ t('h: array component', t => {
 })
 
 t('h: object props preserve internal observables, only high-levels are handled', async t => {
-  let props = {x: v(0), y: v({x: v(1),toString(){}})}
+  let props = { x: v(0), y: v({ x: v(1), toString() { } }) }
   let el = h('x', props)
-  any(el.outerHTML, [`<x x="0"></x>`,`<x x="0" y=""></x>`])
+  any(el.outerHTML, [`<x x="0"></x>`, `<x x="0" y=""></x>`])
   is(el.y, props.y.value)
   is(el.x, props.x.value)
   is(el.y.x.value, 1)
@@ -530,8 +531,8 @@ t.skip('h: closing component', t => {
 t.skip('h: keyed', t => {
   // NOTE: delegated to strui/list
   let ul = document.createElement('ul')
-  let [a1,b1] = h`<${ul}><li id=1>1</li><li>2</li></>`.childNodes
-  let [a2,b2] = h`<${ul}><li id=1>1</li><li>2</li></>`.childNodes
+  let [a1, b1] = h`<${ul}><li id=1>1</li><li>2</li></>`.childNodes
+  let [a2, b2] = h`<${ul}><li id=1>1</li><li>2</li></>`.childNodes
   is(a1, a2)
 })
 
