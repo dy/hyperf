@@ -2,7 +2,7 @@
 
 * [ ] make better use of diffing algo: it's underused now https://github.com/spectjs/spect/issues/262, https://github.com/spectjs/spect/issues/233
 
-* [ ] docs: rxjs https://github.com/spectjs/spect/issues/208
+* [x] ~~docs: rxjs https://github.com/spectjs/spect/issues/208~~
 
 * [x] make use of element-props instead of attr
 
@@ -30,3 +30,6 @@
   * domfrag.js?
   * fragm.js?
   * frage.js?
+
+* [ ] Dispose strategy
+  * unfortunately signals require disposing effects when element is detached from DOM
