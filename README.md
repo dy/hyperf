@@ -5,7 +5,7 @@
 #### ``const el = h`<div foo=${foo}>${bar}</div>` ``
 
 Create an element (or document fragment) via [htm](https://github.com/developit/htm) tagged literal.<br/>
-Fields allow static value, asyncs or reactives <!--_Promise_, _Thenable_ or reactives _AsyncIterable_, _Observable_, _Signal_-->, see [sube](https://github.com/spectjs/sube).
+Fields allow static value, asyncs or reactives<!--_Promise_, _Thenable_ or reactives _AsyncIterable_, _Observable_, _Signal_-->, see [sube](https://github.com/spectjs/sube).
 
 ```js
 import h from './hyperf.js'
