@@ -2,7 +2,7 @@
 
 > Fast & tiny elements / fragments builder with reactivity support.
 
-#### _``const el = h`<div foo=${foo}>${bar}</div>` ``_
+#### ``const el = h`<div foo=${foo}>${bar}</div>` ``
 
 Create an element (or document fragment) via [htm](https://github.com/developit/htm) tagged literal.<br/>
 Fields allow static values, async _Promise_, _Thenable_ or reactives _AsyncIterable_, _Observable_, _Signal_, see [sube](https://github.com/spectjs/sube).
@@ -27,7 +27,7 @@ a.append(frag)
 text = null // cleanup refs/observables
 ```
 
-#### _``const el = h(tag, attrs, ...content) ``_
+#### ``const el = h(tag, attrs, ...content) ``
 
 [Hyperscript](https://github.com/hyperhype/hyperscript) syntax support. To enable JSX just provide a directive for your builder (webpack or esbuild):
 
