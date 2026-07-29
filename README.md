@@ -2,10 +2,10 @@
 
 > Fast & tiny elements / fragments builder with reactivity support.
 
-#### _``const el = h`<div foo=${foo}>${bar}</div>` ``_
+#### ``const el = h`<div foo=${foo}>${bar}</div>` ``
 
 Create an element (or document fragment) via [xhtm](https://github.com/spectjs/xhtm) tagged literal - real HTML: void tags, optional closers, comments, tables.<br/>
-Fields allow static values, async _Promise_, _Thenable_ or reactives _AsyncIterable_, _Observable_, _Signal_, see [sube](https://github.com/spectjs/sube).
+Fields allow static value, asyncs or reactives<!--_Promise_, _Thenable_ or reactives _AsyncIterable_, _Observable_, _Signal_-->, see [sube](https://github.com/spectjs/sube).
 
 ```js
 import h from './hyperf.js'
@@ -27,7 +27,7 @@ a.append(frag)
 
 Subscriptions dispose automatically: dropping the element or the observable is enough.
 
-#### _``const el = h(tag, attrs, ...content) ``_
+#### ``const el = h(tag, attrs, ...content) ``
 
 [Hyperscript](https://github.com/hyperhype/hyperscript) syntax support. To enable JSX just provide a directive for your builder (webpack or esbuild):
 
@@ -42,7 +42,7 @@ document.querySelector('#container').append(a1, a2)
 
 ## Refs
 
-[jsx-dom](https://github.com/alex-kinokon/jsx-dom), [textsaur](https://github.com/ConnorJamesLow/texsaur), [lit-html](https://ghub.io/lit-html), [htm](https://ghub.io/htm), [htl](https://ghub.io/htl), [hyperscript](https://ghub.io/hyperscript), [incremental-dom](https://ghub.io/incremental-dom), [snabbdom](https://ghub.io/snabbdom), [nanomorph](https://ghub.io/nanomorph), [uhtml](https://ghub.io/uhtml), [uele](https://github.com/kethan/uele), [bruh](https://github.com/Technical-Source/bruh), [document-persistent-fragment](https://www.npmjs.com/package/document-persistent-fragment), [doma](https://github.com/fregante/doma), [mini-jsx](https://github.com/remcohaszing/mini-jsx) and others.
+[jsx-dom](https://github.com/alex-kinokon/jsx-dom), [textsaur](https://github.com/ConnorJamesLow/texsaur), [lit-html](https://ghub.io/lit-html), [htm](https://ghub.io/htm), [htl](https://ghub.io/htl), [hyperscript](https://ghub.io/hyperscript), [incremental-dom](https://ghub.io/incremental-dom), [snabbdom](https://ghub.io/snabbdom), [nanomorph](https://ghub.io/nanomorph), [uhtml](https://ghub.io/uhtml), [uele](https://github.com/kethan/uele), [bruh](https://github.com/Technical-Source/bruh), [document-persistent-fragment](https://www.npmjs.com/package/document-persistent-fragment), [doma](https://github.com/fregante/doma), [domify](https://ghub.io/domify), [mini-jsx](https://github.com/remcohaszing/mini-jsx) and others.
 
 
 <p align="center">ॐ</p>
