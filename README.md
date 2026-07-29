@@ -4,7 +4,7 @@
 
 #### _``const el = h`<div foo=${foo}>${bar}</div>` ``_
 
-Create an element (or document fragment) via [htm](https://github.com/developit/htm) tagged literal.<br/>
+Create an element (or document fragment) via [xhtm](https://github.com/spectjs/xhtm) tagged literal - real HTML: void tags, optional closers, comments, tables.<br/>
 Fields allow static values, async _Promise_, _Thenable_ or reactives _AsyncIterable_, _Observable_, _Signal_, see [sube](https://github.com/spectjs/sube).
 
 ```js
@@ -23,9 +23,9 @@ const frag = h`<x ...${{x: 1}}>1</x><y>2</y>`
 
 a.append(frag)
 // <a><x x="1">1</x><y>2</y></a>
-
-text = null // cleanup refs/observables
 ```
+
+Subscriptions dispose automatically: dropping the element or the observable is enough.
 
 #### _``const el = h(tag, attrs, ...content) ``_
 

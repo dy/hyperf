@@ -1,26 +1,28 @@
-import htm from 'htm'
+import htm from 'xhtm'
 import sube, { observable } from 'sube'
 import swap from 'swapdom'
 import { prop as attr } from 'element-props'
 
-export const _static = Symbol()
-
 // configure swapper
-// FIXME: modifying prev key can also make it faster
-// FIXME: avoid insert, replace: do that before
 swap.same = (a, b) => a === b || (a?.data != null && a.data === b?.data)
 swap.insert = (a, b, parent) => b != null && parent.insertBefore(b?.nodeType ? b : doc.createTextNode(b), a)
-swap.replace = (from, to, parent) => !to ? from.replace() : to.nodeType ? parent.replaceChild(to, from) :
+swap.replace = (from, to, parent) => to == null ? from.remove() : to.nodeType ? parent.replaceChild(to, from) :
   from.nodeType === TEXT ? from.data = to : from.replaceWith(to)
 
 
-const TEXT = 3, ELEM = 1, ATTR = 2, COMM = 8, FRAG = 11, COMP = 6
-const isPrimitive = value => value !== Object(value);
+const TEXT = 3, ELEM = 1, FRAG = 11
+const isPrimitive = value => value !== Object(value)
 
-const cache = new WeakSet,
-  ctx = { _init: false },
-  doc = document,
-  h = hyperscript.bind(ctx)
+const doc = document, _ch = Symbol()
+
+// subscribe with element-bound lifetime: closure refs the element only weakly,
+// so an unreferenced detached tree is collected and the sub self-disposes on next emit
+const watch = (el, target, update) => {
+  let ref = new WeakRef(el), unsub = sube(target, v => {
+    let el = ref.deref()
+    el ? update(el, v) : unsub?.()
+  })
+}
 
 function flat(children) {
   let out = [], i = 0, item
@@ -32,43 +34,26 @@ function flat(children) {
   return out
 }
 
+const cache = new WeakMap
+
 export default function html(statics) {
   if (!Array.isArray(statics)) return h(...arguments)
 
-  // HTM caches nodes that don't have attr or children fields
-  // eg. <a><b>${1}</b></a> - won't cache `a`,`b`, but <a>${1}<b/></a> - will cache `b`
-  // for that purpose we first build template with blank fields, marking all fields as tpl
-  // NOTE: static nodes caching is bound to htm.this (h) function, so can't substitute it
-  // NOTE: we can't use first non-cached call result, because it serves as source for further cloning static nodes
-  let result, count = 1
-  if (!cache.has(statics)) count++, cache.add(statics)
-  while (count--) {
-    ctx._init = count ? true : false
-    // init render may setup observables, which is undesirable - so we skip attributes
-    result = htm.apply(h, count ? [statics] : arguments)
+  // no fields - fully static template: build once, clone
+  if (statics.length === 1) {
+    let node = cache.get(statics)
+    if (!node) cache.set(statics, node = toNode(htm.call(h, statics)))
+    return node.cloneNode(true)
   }
 
-  return Array.isArray(result) ? h(doc.createDocumentFragment(), null, ...result) :
-    result?.[_static] ? result.cloneNode(true) :
-      result?.nodeType ? result : isPrimitive(result) ? doc.createTextNode(result ?? '') : result
+  return toNode(htm.apply(h, arguments))
 }
 
-function hyperscript(tag, props, ...children) {
-  let { _init } = this
+const toNode = result => Array.isArray(result) ? h(doc.createDocumentFragment(), null, ...result) :
+  result?.nodeType ? result : isPrimitive(result) ? doc.createTextNode(result ?? '') : result
 
-  if (typeof tag === 'string') {
-    tag = tag ? doc.createElement(tag) : doc.createDocumentFragment()
-
-    // shortcut for faster creation, static nodes are really simple
-    if (_init) {
-      tag[_static] = true
-      for (let name in props) attr(tag, name, props[name])
-        ; (tag.nodeName === 'TEMPLATE' ? tag.content : tag).append(...flat(children))
-      return null, tag
-    }
-  }
-  // _init call is irrelevant for dynamic nodes
-  else if (_init) return null
+function h(tag, props, ...children) {
+  if (typeof tag === 'string') tag = tag ? doc.createElement(tag) : doc.createDocumentFragment()
   else if (typeof tag === 'function') {
     tag = tag({ children, ...props })
 
@@ -88,19 +73,15 @@ function hyperscript(tag, props, ...children) {
   }
 
   // apply props
-  let subs = [], i, l, child, name, value, s, v, match
-
-  for (name in props) {
-    value = props[name]
-    // classname can contain these casted literals
-    if (typeof value === 'string' && name.startsWith('class')) value = value.replace(/\b(false|null|undefined)\b/g, '')
-
+  for (let name in props) {
+    let value = props[name]
     // primitive is more probable also less expensive than observable check
-    if (observable(value)) sube(value, v => attr(tag, name, v))
+    if (observable(value)) watch(tag, value, (el, v) => attr(el, name, v))
     else if (typeof value !== 'string' && name === 'style') {
-      for (s in value) {
-        if (observable(v = value[s])) sube(v, v => tag.style.setProperty(s, v))
-        else if (match = v.match(/(.*)\W+!important\W*$/)) tag.style.setProperty(s, match[1], 'important')
+      for (let s in value) {
+        let v = value[s], match
+        if (observable(v)) watch(tag, v, (el, v) => el.style.setProperty(s, v))
+        else if (typeof v === 'string' && (match = v.match(/(.*)\W+!important\W*$/))) tag.style.setProperty(s, match[1], 'important')
         else tag.style.setProperty(s, v)
       }
     }
@@ -111,25 +92,28 @@ function hyperscript(tag, props, ...children) {
     children = flat(children)
 
     // detect observables in children
-    for (i = 0, l = children.length; i < l; i++) {
-      if (child = children[i])
-        // static nodes (cached by HTM) must be cloned, because h is not called for them more than once
-        if (child[_static]) children[i] = child.cloneNode(true)
-        else if (observable(child)) subs[i] = child, children[i] = doc.createTextNode('')
-    }
+    let subs
+    for (let i = 0, l = children.length, child; i < l; i++)
+      if ((child = children[i]) && observable(child)) (subs ||= []).push([child, i]), children[i] = doc.createTextNode('')
 
     // append shortcut
     if (!tag.childNodes.length) (tag.nodeName === 'TEMPLATE' ? tag.content : tag).append(...children)
     else swap(tag, tag.childNodes, children)
 
-    if (subs.length) subs.forEach((sub, i) => sube(sub, child => (
-      children[i] = child,
+    if (subs) {
+      // children state lives on the element, not in closures - see watch
+      tag[_ch] = children
+      for (let [sub, i] of subs) watch(tag, sub, (el, child) => {
+        let children = el[_ch], cur = children[i]
+        // primitive into a live text node: no diffing
+        if (isPrimitive(child) && cur?.nodeType === TEXT && cur.parentNode) cur.data = child ?? ''
 
-      // NOTE: in some cases fragment is a child of another fragment, we ignore that case
-      swap(tag, tag.childNodes, flat(children))
-    )))
+        // NOTE: in some cases fragment is a child of another fragment, we ignore that case
+        else children[i] = child, swap(el, el.childNodes, flat(children))
+      })
+    }
   }
   else tag.innerHTML = ''
 
-  return null, tag
+  return tag
 }

@@ -901,3 +901,33 @@ t('html: xhtm#26', async t => {
   await tick()
   is(wrapped.outerHTML, `<p><p>async</p></p>`)
 })
+
+t('html: static template returns independent clones', t => {
+  let a = h`<a>x<b>y</b></a>`, b = h`<a>x<b>y</b></a>`
+  not(a, b)
+  a.firstChild.data = 'changed'
+  is(b.outerHTML, '<a>x<b>y</b></a>')
+  is(h`<a>x<b>y</b></a>`.outerHTML, '<a>x<b>y</b></a>')
+})
+
+t('html: interpolated style attribute', t => {
+  is(h`<a style="color: ${'red'}"/>`.style.color, 'red')
+})
+
+t('html: falsy and numeric class fields', t => {
+  is(h`<div class="x ${false}"/>`.getAttribute('class'), 'x ')
+  is(h`<div class="x ${5}"/>`.getAttribute('class'), 'x 5')
+})
+
+t('html: raw array prop stays array', t => {
+  let el = h`<a items=${[]}/>`
+  is(Array.isArray(el.items), true)
+  is(el.items.length, 0)
+})
+
+t('html: real-html syntax', t => {
+  is(h`<ul><li>a<li>b</ul>`.outerHTML, '<ul><li>a</li><li>b</li></ul>')
+  is(h`<table><tr><td>1<td>2</table>`.outerHTML, '<table><tr><td>1</td><td>2</td></tr></table>')
+  is(h`<!-- note --><b>x</b>`.outerHTML, '<b>x</b>')
+  is(h`<input type=text>`.outerHTML, '<input type="text">')
+})

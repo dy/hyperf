@@ -1,8 +1,12 @@
 # plan
 
-* [ ] make better use of diffing algo: it's underused now https://github.com/spectjs/spect/issues/262, https://github.com/spectjs/spect/issues/233
+* [x] make better use of diffing algo: it's underused now https://github.com/spectjs/spect/issues/262, https://github.com/spectjs/spect/issues/233
+  * primitive emits into a live text slot set `.data` directly, O(1); diffing reserved for node/array emits
 
 * [x] ~~docs: rxjs https://github.com/spectjs/spect/issues/208~~
+
+* [x] swap htm for xhtm: real HTML syntax, no static-caching workarounds (`_static`/`_init` deleted); cost +0.5k gzip
+  * xhtm 1.8.0 joins multi-part attrs to string (falsy fields turn empty), no parts-array handling needed here
 
 * [x] make use of element-props instead of attr
 
@@ -30,6 +34,9 @@
   * domfrag.js?
   * fragm.js?
   * frage.js?
+  * hypd
+  * hyel (hyper element)
 
-* [ ] Dispose strategy
+* [x] Dispose strategy
   * unfortunately signals require disposing effects when element is detached from DOM
+  * solved zero-API: subs hold element via WeakRef, state lives on the element (`_ch` expando); unreferenced detached tree is GC'd, next emit self-unsubscribes; observable side covered by sube's FinalizationRegistry

@@ -101,6 +101,61 @@ test('hyperscript: observable style', function (t) {
   is(div.style.color, 'blue')
 })
 
+test('hyperscript: two observable props update independently', function (t) {
+  var p = o(), q = o()
+  p(1), q(2)
+  var e = h('x', { p: p, q: q })
+  is(e.outerHTML, '<x p="1" q="2"></x>')
+  p(10)
+  is(e.outerHTML, '<x p="10" q="2"></x>')
+  q(20)
+  is(e.outerHTML, '<x p="10" q="20"></x>')
+})
+
+test('hyperscript: two observable styles update independently', function (t) {
+  var color = o(), weight = o()
+  color('red'), weight('bold')
+  var e = h('div', { style: { color: color, 'font-weight': weight } })
+  color('blue')
+  is(e.style.color, 'blue')
+  is(e.style.fontWeight, 'bold')
+})
+
+test('hyperscript: numeric style values', function (t) {
+  var e = h('a', { style: { opacity: 0.5 } })
+  is(e.style.opacity, '0.5')
+})
+
+test('hyperscript: string class passes through untouched', function (t) {
+  is(h('a', { class: 'is-null my-false-btn x false' }).getAttribute('class'), 'is-null my-false-btn x false')
+})
+
+test('hyperscript: array class joins', function (t) {
+  is(h('a', { class: ['a', 'b'] }).getAttribute('class'), 'a b')
+})
+
+test('hyperscript: observable child swaps between text and element', function (t) {
+  var val = o()
+  val('m')
+  var e = h('a', null, val)
+  is(e.outerHTML, '<a>m</a>')
+  val(h('b', null, 'el'))
+  is(e.outerHTML, '<a><b>el</b></a>')
+  val('back')
+  is(e.outerHTML, '<a>back</a>')
+  val(null)
+  is(e.textContent, '')
+})
+
+test('hyperscript: observable child updates keep siblings', function (t) {
+  var val = o()
+  val(0)
+  var e = h('a', null, val, h('b', null, 'x'), 'tail')
+  is(e.outerHTML, '<a>0<b>x</b>tail</a>')
+  val(1)
+  is(e.outerHTML, '<a>1<b>x</b>tail</a>')
+})
+
 test.skip('hyperscript: unicode selectors', function (t) {
   // is(h('.⛄').outerHTML, '<div class="⛄"></div>')
   is(h('span#⛄').outerHTML, '<span id="⛄"></span>')
