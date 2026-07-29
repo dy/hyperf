@@ -292,7 +292,7 @@ swap.replace = (from, to, parent) => to == null ? from.remove() : to.nodeType ? 
 const TEXT = 3, ELEM = 1, FRAG = 11;
 const isPrimitive = value => value !== Object(value);
 
-const doc = document, _ch = Symbol();
+const doc = document, _nodes = Symbol();
 
 // subscribe with element-bound lifetime: closure refs the element only weakly,
 // so an unreferenced detached tree is collected and the sub self-disposes on next emit
@@ -370,27 +370,33 @@ function h(tag, props, ...children) {
   if (children.length) {
     children = flat(children);
 
-    // detect observables in children
+    // observable slots get a marker text node
     let subs;
     for (let i = 0, l = children.length, child; i < l; i++)
-      if ((child = children[i]) && observable(child)) (subs ||= []).push([child, i]), children[i] = doc.createTextNode('');
+      if ((child = children[i]) && observable(child)) (subs ||= []).push([children[i] = doc.createTextNode(''), child]);
 
     // append shortcut
     if (!tag.childNodes.length) (tag.nodeName === 'TEMPLATE' ? tag.content : tag).append(...children);
     else swap(tag, tag.childNodes, children);
 
-    if (subs) {
-      // children state lives on the element, not in closures - see watch
-      tag[_ch] = children;
-      for (let [sub, i] of subs) watch(tag, sub, (el, child) => {
-        let children = el[_ch], cur = children[i];
-        // primitive into a live text node: no diffing
-        if (isPrimitive(child) && cur?.nodeType === TEXT && cur.parentNode) cur.data = child ?? '';
-
-        // NOTE: in some cases fragment is a child of another fragment, we ignore that case
-        else children[i] = child, swap(el, el.childNodes, flat(children));
-      });
-    }
+    // slot updates anchor to own marker: it stays live in any parent,
+    // incl. fragments whose children were moved elsewhere (live fragments)
+    if (subs) for (let [marker, sub] of subs) marker[_nodes] = [], watch(marker, sub, (m, child) => {
+      let prev = m[_nodes];
+      // primitive lives in the marker itself: no diffing
+      if (isPrimitive(child)) {
+        m.data = child ?? '';
+        if (prev.length && m.parentNode) swap(m.parentNode, prev, m[_nodes] = [], m);
+      }
+      else if (m.parentNode) {
+        m.data = '';
+        let b = child.nodeType === FRAG ? [...child.childNodes] : flat([child]);
+        swap(m.parentNode, prev, b, m);
+        // swap keeps data-equal prev nodes: read actual slot content off the DOM
+        let nodes = m[_nodes] = Array(b.length);
+        for (let n = m.previousSibling, k = b.length; k--; n = n.previousSibling) nodes[k] = n;
+      }
+    });
   }
   else tag.innerHTML = '';
 

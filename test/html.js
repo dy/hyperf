@@ -440,6 +440,40 @@ t('html: component static props', async t => {
   is(log, ['x', 'y z'])
 })
 
+t('html: live fragment keeps reactivity after insertion (#1)', async t => {
+  let val = v('foo')
+  let frag = h`<>${val}</>`
+  let container = document.createElement('div')
+  container.append('[', frag, ']')
+  is(container.innerHTML, '[foo]')
+
+  val.value = 'bar'
+  is(container.innerHTML, '[bar]')
+
+  val.value = h`<strong>FOO</strong>`
+  is(container.innerHTML, '[<strong>FOO</strong>]')
+
+  val.value = [h`<b>x</b>`, ' ', h`<i>y</i>`]
+  is(container.innerHTML, '[<b>x</b> <i>y</i>]')
+
+  val.value = h`<p>1</p><p>2</p>`
+  is(container.innerHTML, '[<p>1</p><p>2</p>]')
+
+  val.value = 'back'
+  is(container.innerHTML, '[back]')
+
+  val.value = null
+  is(container.innerHTML, '[]')
+})
+
+t('html: live multi-root fragment', async t => {
+  let a = v(1), b = v(2)
+  let container = document.createElement('div')
+  container.append(h`<x>${a}</x><y>${b}</y>`)
+  a.value = 10, b.value = 20
+  is(container.innerHTML, '<x>10</x><y>20</y>')
+})
+
 t('html: classes must recognize false props', t => {
   let el = h`<div class="${null} ${undefined} ${'foo'} ${undefined}"/>`
   is(el.outerHTMLClean, `<div class="  foo "></div>`)

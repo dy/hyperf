@@ -37,6 +37,9 @@
   * hypd
   * hyel (hyper element)
 
+* [x] live fragments https://github.com/dy/hyperf/issues/1
+  * slot updates anchor to own marker text node, not the parent: reactivity survives fragment insertion; top-level only, nested fragments stay unsupported
+
 * [x] Dispose strategy
   * unfortunately signals require disposing effects when element is detached from DOM
   * solved zero-API: subs hold element via WeakRef, state lives on the element (`_ch` expando); unreferenced detached tree is GC'd, next emit self-unsubscribes; observable side covered by sube's FinalizationRegistry
